@@ -1,0 +1,10 @@
+#!/bin/sh
+if sas2ircu LIST | grep -q "Discovery Error"; then
+  echo "OK - no sas2ircu compatible RAID controller found"
+  exit 0
+fi
+
+ret=$(sas2ircu 0 DISPLAY | grep "Status of volume" | cut -d':' -f2)
+
+echo "$ret"
+echo "$ret" | grep -q 'OKY'
