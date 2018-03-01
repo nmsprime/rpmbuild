@@ -55,7 +55,7 @@ for net in $sh_nets; do
 		fi
 		if [ $cur -gt $crit ]; then
 			status='CRITICAL'
-			exit=1
+			exit=2
 		fi
 
 		text+=" '$net ($prefix.x, #left:$left)'=$cur%;$warn;$crit"
