@@ -25,6 +25,12 @@ crit=$(snmpwalk -Oqv -v2c -c "$com" "$ip" 1.3.6.1.4.1.9.9.138.1.2.1)
 major=$(snmpwalk -Oqv -v2c -c "$com" "$ip" 1.3.6.1.4.1.9.9.138.1.2.2)
 minor=$(snmpwalk -Oqv -v2c -c "$com" "$ip" 1.3.6.1.4.1.9.9.138.1.2.3)
 
+# ciscoUbr7225Vxr reports unused GBICs as missing
+if [ $(snmpwalk -Oqv -v2c -c "$com" "$ip" .1.3.6.1.2.1.1.2) = 'SNMPv2-SMI::enterprises.9.1.827' ]; then
+	sub=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.4.1.9.9.138.1.2.5.1.2 | grep -e '\.7 =' -e '\.10 =' -e '\.13 =' | wc -l)
+	crit=$((crit-sub))
+fi
+
 exit=0
 status='OK'
 text=''
