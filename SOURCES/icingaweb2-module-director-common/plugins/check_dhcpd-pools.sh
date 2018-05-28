@@ -1,8 +1,8 @@
 #!/bin/bash
 conf='/etc/dhcp/dhcpd.conf'
 lease='/var/lib/dhcpd/dhcpd.leases'
-warn=70
-crit=90
+warn=10
+crit=5
 
 while getopts ":c:l:W:C:" opt; do
 	case $opt in
@@ -46,19 +46,18 @@ for net in $sh_nets; do
 			all=$(echo "$subnet" | awk -v all="$all" '{print $5+all}')
 			used=$(echo "$subnet" | awk -v used="$used" '{print $6+used}')
 		done
-		cur=$(echo "$used * 100 / $all" | bc)
-		left=$(echo "$all - $used" | bc)
+		left=$(($all - used))
 
-		if [ $cur -gt $warn -a $status = 'OK' ]; then
+		if [ $left -le $warn -a $status = 'OK' ]; then
 			status='WARNING'
 			exit=1
 		fi
-		if [ $cur -gt $crit ]; then
+		if [ $left -le $crit ]; then
 			status='CRITICAL'
 			exit=2
 		fi
 
-		text+=" '$net ($prefix.x, #left:$left)'=$cur%;$warn;$crit"
+		text+=" '$net ($prefix.x, #left: $left/$all)'=$used;$((all - warn));$((all - crit));0;$all"
 	done
 done
 
