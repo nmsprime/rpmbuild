@@ -1,0 +1,11 @@
+--- a/SOURCES/icingaweb2-module-director-common/library/Director/Objects/IcingaObjectGroups.php
++++ b/SOURCES/icingaweb2-module-director-common/library/Director/Objects/IcingaObjectGroups.php
+@@ -173,7 +173,7 @@
+             }
+ 
+             $this->groups[$group->object_name] = $group;
+-        } elseif (is_string($group)) {
++        } elseif (is_string($group) || is_integer($group)) {
+             if (array_key_exists($group, $this->groups)) {
+                 return $this;
+             }
