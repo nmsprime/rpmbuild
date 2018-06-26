@@ -1,10 +1,11 @@
 #!/bin/bash
 conf='/etc/dhcp/dhcpd.conf'
 lease='/var/lib/dhcpd/dhcpd.leases'
-warn=10
-crit=5
+warn=80
+crit=90
+ignore=15
 
-while getopts ":c:l:W:C:" opt; do
+while getopts ":c:l:W:C:I:" opt; do
 	case $opt in
 	c)
 		conf="$OPTARG"
@@ -17,6 +18,9 @@ while getopts ":c:l:W:C:" opt; do
 		;;
 	C)
 		crit="$OPTARG"
+		;;
+	I)
+		ignore="$OPTARG"
 		;;
 	\?)
 		echo "Invalid option: -$OPTARG" >&2
@@ -46,18 +50,20 @@ for net in $sh_nets; do
 			all=$(echo "$subnet" | awk -v all="$all" '{print $5+all}')
 			used=$(echo "$subnet" | awk -v used="$used" '{print $6+used}')
 		done
-		left=$(($all - used))
 
-		if [ $left -le $warn -a $status = 'OK' ]; then
+		per_left=$(echo "$used * 100 / $all" | bc)
+		if [ $per_left -gt $warn -a $status = 'OK' ]; then
 			status='WARNING'
 			exit=1
 		fi
-		if [ $left -le $crit ]; then
+		if [ $per_left -gt $crit ]; then
 			status='CRITICAL'
 			exit=2
 		fi
 
-		text+=" '$net ($prefix.x, #left: $left/$all)'=$used;$((all - warn));$((all - crit));0;$all"
+		if [ $((all - used)) -lt $ignore ]; then
+			text+=" '$net ($prefix.x, #left: $((all - used))/$all)'=$per_left%;$warn;$crit"
+		fi
 	done
 done
 
