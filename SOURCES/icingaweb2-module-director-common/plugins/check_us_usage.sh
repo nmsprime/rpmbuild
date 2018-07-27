@@ -31,6 +31,10 @@ done
 
 idx=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.2.1.10.127.1.1.4.1.5 | sed -s '/INTEGER: 0$/d' | cut -d'=' -f1 | awk -F'.' '{print $NF}' | sed 's/ $//')
 val=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.2.1.10.127.1.3.9.1.3 | grep -f <(echo "$idx") | awk -F':' '{print $NF}' | sed 's/^ //')
+if [ -z "$val" ]; then
+	echo "US_USAGE not supported"
+	exit 0
+fi
 name=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.2.1.31.1.1.1.1 | grep -f <(echo "$idx") | awk -F':' '{print $NF}' | sed 's/^ //')
 alias=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.2.1.31.1.1.1.18 | grep -f <(echo "$idx") | awk -F':' '{print $NF}' | sed 's/^ //')
 freq=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.2.1.10.127.1.1.2.1.2 | grep -f <(echo "$idx") | awk -F':' '{print $NF}' | sed 's/$/\/1000000/' | bc -l | sed 's/\.\?0\+$//')

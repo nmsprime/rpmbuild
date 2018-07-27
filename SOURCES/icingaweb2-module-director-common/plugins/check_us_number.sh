@@ -31,6 +31,10 @@ done
 
 idx=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.2.1.10.127.1.1.4.1.5 | sed -s '/INTEGER: 0$/d' | cut -d'=' -f1 | awk -F'.' '{print $NF}' | sed 's/ $//')
 tot=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.4.1.9.9.116.1.4.1.1.3 | grep -f <(echo "$idx") | awk -F':' '{print $NF}' | sed 's/^ //')
+if [ -z "$tot" ]; then
+	echo "US_NUMBER not supported"
+	exit 0
+fi
 act=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.4.1.9.9.116.1.4.1.1.5 | grep -f <(echo "$idx") | awk -F':' '{print $NF}' | sed 's/^ //')
 name=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.2.1.31.1.1.1.1 | grep -f <(echo "$idx") | awk -F':' '{print $NF}' | sed 's/^ //')
 alias=$(snmpwalk -v2c -c "$com" "$ip" .1.3.6.1.2.1.31.1.1.1.18 | grep -f <(echo "$idx") | awk -F':' '{print $NF}' | sed 's/^ //')
