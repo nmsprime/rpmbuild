@@ -46,7 +46,7 @@ ser=$(snmpwalk -Oqn -c "$com" -v2c "$ip" .1.3.6.1.2.1.47.1.1.1.1.11)
 err=0
 # iterate over all cevUbrDtcc
 while read -r idx; do
-	if grep ".1.3.6.1.2.1.47.1.1.1.1.11.$idx" <<< "$ser" | grep -q '""'; then
+	if grep ".1.3.6.1.2.1.47.1.1.1.1.11.$idx " <<< "$ser" | grep -q '""'; then
 		# serial number not available means dtcc is broken
 		((err++))
 	fi
