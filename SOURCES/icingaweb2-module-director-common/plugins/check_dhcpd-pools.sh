@@ -51,6 +51,10 @@ for net in $sh_nets; do
 			used=$(echo "$subnet" | awk -v used="$used" '{print $6+used}')
 		done
 
+		if [ $((all - used)) -gt $ignore ]; then
+			continue
+		fi
+
 		per_left=$(echo "$used * 100 / $all" | bc)
 		if [ $per_left -gt $warn -a $status = 'OK' ]; then
 			status='WARNING'
@@ -61,9 +65,7 @@ for net in $sh_nets; do
 			exit=2
 		fi
 
-		if [ $((all - used)) -lt $ignore ]; then
-			text+=" '$net ($prefix.x, #left: $((all - used))/$all)'=$per_left%;$warn;$crit"
-		fi
+		text+=" '$net ($prefix.x, #left: $((all - used))/$all)'=$per_left%;$warn;$crit"
 	done
 done
 
