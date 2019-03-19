@@ -34,39 +34,34 @@ while getopts ":c:l:W:C:I:" opt; do
 done
 
 pools=$(dhcpd-pools -c "$conf" -l "$lease" | sed -e '1,2d' -e '/ETHERNET/d' -e '/^$/q' | sed '/^$/d')
-sh_nets=$(echo "$pools" | cut -d' ' -f1 | sort -u)
 
 exit=0
 status='OK'
 text=''
-for net in $sh_nets; do
-	prefixes=$(echo "$pools" | grep "$net" | awk '{print $2}' | cut -d'.' -f1 | sort -u)
+for file in /etc/dhcp-nmsprime/cmts_gws/*.conf; do
+	dir=$(mktemp -d)
+	net=$(grep shared-network "$file" | cut -d'"' -f2)
+	while read subnet; do
+		read -r -a pool <<< "$subnet"
+		awk "/${pool[1]} /,/${pool[2]} /" <<< "$pools" >> "$dir/${pool[0]}"
+	done < <(grep -o "#pool:.*" "$file" | cut -d' ' -f2-4)
 
-	for prefix in $prefixes; do
-		used=0
-		all=0
-		IFS=$'\n'
-		for subnet in $(echo "$pools" | grep "$net[[:space:]]\+$prefix\."); do
-			all=$(echo "$subnet" | awk -v all="$all" '{print $5+all}')
-			used=$(echo "$subnet" | awk -v used="$used" '{print $6+used}')
-		done
-
-		if [ $((all - used)) -gt $ignore ]; then
-			continue
-		fi
-
-		per_left=$(echo "$used * 100 / $all" | bc)
-		if [ $per_left -gt $warn -a $status = 'OK' ]; then
+	for file in "$dir"/*; do
+		read -r -a stats < <(awk '{all+=$5; used+=$6} END{printf("%.0f %d %d", used/all*100, all-used, all);}' "$file")
+		if [ ${stats[0]} -gt $warn -a $status = 'OK' ]; then
 			status='WARNING'
 			exit=1
 		fi
-		if [ $per_left -gt $crit ]; then
+		if [ ${stats[0]} -gt $crit ]; then
 			status='CRITICAL'
 			exit=2
 		fi
 
-		text+=" '$net ($prefix.x, #left: $((all - used))/$all)'=$per_left%;$warn;$crit"
+		if [ ${stats[1]} -lt $ignore ]; then
+			text+=" '$net ($(basename "$file"), #left: ${stats[1]}/${stats[2]})'=${stats[0]}%;$warn;$crit"
+		fi
 	done
+	rm -rf "$dir"
 done
 
 echo "$status |$text"
