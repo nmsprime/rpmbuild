@@ -48,16 +48,17 @@ for file in /etc/dhcp-nmsprime/cmts_gws/*.conf; do
 
 	for file in "$dir"/*; do
 		read -r -a stats < <(awk '{all+=$5; used+=$6} END{printf("%.0f %d %d", used/all*100, all-used, all);}' "$file")
-		if [ ${stats[0]} -gt $warn -a $status = 'OK' ]; then
-			status='WARNING'
-			exit=1
-		fi
-		if [ ${stats[0]} -gt $crit ]; then
-			status='CRITICAL'
-			exit=2
-		fi
 
 		if [ ${stats[1]} -lt $ignore ]; then
+			if [ ${stats[0]} -gt $warn -a $status = 'OK' ]; then
+				status='WARNING'
+				exit=1
+			fi
+			if [ ${stats[0]} -gt $crit ]; then
+				status='CRITICAL'
+				exit=2
+			fi
+
 			text+=" '$net ($(basename "$file"), #left: ${stats[1]}/${stats[2]})'=${stats[0]}%;$warn;$crit"
 		fi
 	done
