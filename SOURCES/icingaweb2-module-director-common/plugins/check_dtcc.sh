@@ -32,7 +32,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # get all DTCC modules
-dtccs=$(grep "1.3.6.1.4.1.9.12.3.1.9.27.44$" <<< "$inv")
+dtccs=$(grep "1.3.6.1.4.1.9.12.3.1.9.27.4[1,4]$" <<< "$inv")
 num=$(wc -l <<< "$dtccs")
 
 if [ "$num" -lt 2 ]; then
