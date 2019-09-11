@@ -47,6 +47,9 @@ for file in /etc/dhcp-nmsprime/cmts_gws/*.conf; do
 	done < <(grep -o "#pool:.*" "$file" | cut -d' ' -f2-4)
 
 	for file in "$dir"/*; do
+		# skip if folder is empty
+		[ -f "$file" ] || continue
+
 		read -r -a stats < <(awk '{all+=$5; used+=$6} END{printf("%.0f %d %d", used/all*100, all-used, all);}' "$file")
 
 		if [ ${stats[1]} -lt $ignore ]; then
