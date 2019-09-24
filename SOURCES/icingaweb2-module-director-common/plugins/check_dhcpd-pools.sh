@@ -50,7 +50,7 @@ for file in /etc/dhcp-nmsprime/cmts_gws/*.conf; do
 		# skip if folder is empty
 		[ -f "$file" ] || continue
 
-		read -r -a stats < <(awk '{all+=$5; used+=$6} END{printf("%.0f %d %d", used/all*100, all-used, all);}' "$file")
+		read -r -a stats < <(awk '{all+=$(NF-5); used+=$(NF-4)} END{printf("%.0f %d %d", used/all*100, all-used, all);}' "$file")
 
 		if [ ${stats[1]} -lt $ignore ]; then
 			if [ ${stats[0]} -gt $warn -a $status = 'OK' ]; then
