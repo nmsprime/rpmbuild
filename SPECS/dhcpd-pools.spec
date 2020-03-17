@@ -1,5 +1,5 @@
 Name: dhcpd-pools
-Version: 2.28
+Version: 3.0
 Release: 1
 Summary: ISC dhcpd leases usage analysis
 
@@ -32,5 +32,8 @@ make %{?_smp_mflags}
 %{_mandir}/man1/%{name}.1.gz
 
 %changelog
+* Tue Mar 17 2020 Ole Ernst <ole.ernst@roetzer-engineering.com> - 3.0-1
+- upgpkg
+
 * Fri Aug 25 2017 Ole Ernst <ole.ernst@roetzer-engineering.com> - 2.28-1
 - Initial RPM release
