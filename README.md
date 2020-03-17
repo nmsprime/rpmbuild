@@ -1,2 +1,2 @@
 # rpmbuild
-Additonal RPM packages need for nmsprime
+Additional RPM packages need for nmsprime
