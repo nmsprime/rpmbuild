@@ -53,6 +53,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(644,root,root,755)
 %{_includedir}/rem/*.h
 %{_libdir}/librem*.a
+%{_libdir}/pkgconfig/librem.pc
 
 
 %changelog
