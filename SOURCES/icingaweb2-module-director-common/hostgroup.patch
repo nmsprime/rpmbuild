@@ -1,5 +1,5 @@
---- a/SOURCES/icingaweb2-module-director-common/library/Director/Objects/IcingaObjectGroups.php
-+++ b/SOURCES/icingaweb2-module-director-common/library/Director/Objects/IcingaObjectGroups.php
+--- a/library/Director/Objects/IcingaObjectGroups.php
++++ b/library/Director/Objects/IcingaObjectGroups.php
 @@ -173,7 +173,7 @@
              }
  

@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.4.2
-Release: 7
+Release: 8
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -214,6 +214,11 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Tue Apr 28 2020 Ole Ernst <ole.ernst@roetzer-engineering.com> - 1.4.2-8
+- remove unneeded sclo-php71-php-pecl-imagick dependency
+- make sure yum is not running in parallel, due to checking both
+  updates and nmsprime-update at the same time
+
 * Fri Jan 10 2020 Ole Ernst <ole.ernst@roetzer-engineering.com> - 1.4.2-7
 - allow both NULL and 0 for parent_id in netelementtype
 - check services radiusd, mongod, genieacs-cwmp, genieacs-fs, genieacs-nbi
