@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.4.2
-Release: 8
+Release: 9
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -195,7 +195,11 @@ REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL
 REPLACE INTO `director_job` VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL);
 REPLACE INTO `director_job_setting` VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1');
 EOF
-mysql --batch -u nmsprime --password="$mysql_nmsprime_psw" -e "SELECT id, name FROM nmsprime.netelementtype WHERE parent_id = 0 AND id > 2 AND id < 1000;" | tail -n +2 | while read id name; do
+mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "SELECT id, name FROM netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) AND id > 2 AND id < 1000;" | tail -n +2 | while read id name; do
+  icingacli director hostgroup exists "$id" > /dev/null
+  if [ $? -eq 0 ]; then
+    continue
+  fi
   icingacli director hostgroup create "$id" --json "{\"display_name\":\"$name\"}"
 done
 
@@ -214,6 +218,9 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Mon May 04 2020 Ole Ernst <ole.ernst@roetzer-engineering.com> - 1.4.2-9
+- allow parent_id to be both 0 and NULL
+
 * Tue Apr 28 2020 Ole Ernst <ole.ernst@roetzer-engineering.com> - 1.4.2-8
 - remove unneeded sclo-php71-php-pecl-imagick dependency
 - make sure yum is not running in parallel, due to checking both
