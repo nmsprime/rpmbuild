@@ -33,7 +33,7 @@ while getopts ":c:l:W:C:I:" opt; do
 	esac
 done
 
-pools=$(dhcpd-pools -c "$conf" -l "$lease" | sed -e '1,2d' -e '/ETHERNET/d' -e '/^$/q' | sed '/^$/d')
+pools=$(dhcpd-pools -c "$conf" -l "$lease" -L 01 -f csv | tr -d '"')
 
 exit=0
 status='OK'
@@ -43,14 +43,16 @@ for file in /etc/dhcp-nmsprime/cmts_gws/*.conf; do
 	net=$(grep shared-network "$file" | cut -d'"' -f2)
 	while read subnet; do
 		read -r -a pool <<< "$subnet"
-		awk "/${pool[1]} /,/${pool[2]} /" <<< "$pools" >> "$dir/${pool[0]}"
+		# filter for start and stop IP and get rid of net name,
+		# which may contain a colon or double-quoting, making csv parsing harder
+		grep -o "${pool[1]},${pool[2]}.*" <<< "$pools" >> "$dir/${pool[0]}"
 	done < <(grep -o "#pool:.*" "$file" | cut -d' ' -f2-4)
 
 	for file in "$dir"/*; do
 		# skip if folder is empty
 		[ -f "$file" ] || continue
 
-		read -r -a stats < <(awk '{all+=$(NF-5); used+=$(NF-4)} END{printf("%.0f %d %d", used/all*100, all-used, all);}' "$file")
+		read -r -a stats < <(awk -F',' '{all+=$3; used+=$4} END{printf("%.0f %d %d", used/all*100, all-used, all);}' "$file")
 
 		if [ ${stats[1]} -lt $ignore ]; then
 			if [ ${stats[0]} -gt $warn -a $status = 'OK' ]; then

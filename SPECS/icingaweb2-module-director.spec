@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.4.2
-Release: 9
+Release: 10
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -19,7 +19,7 @@ Source9: https://raw.githubusercontent.com/melmorabity/nagios-plugin-systemd-ser
 
 Requires: bc dhcpd-pools icinga2 icinga2-ido-mysql icingacli icingaweb2 nagios-plugins-all
 Requires: nmsprime-hfcreq nmsprime-provmon perl-Nagios-Plugin perl-Net-SNMP
-Requires: perl-Readonly perl-Switch rh-php71-php-ldap
+Requires: perl-Readonly perl-Switch rh-php73-php-ldap
 
 %description
 Icinga Director has been designed to make Icinga 2 configuration handling easy.
@@ -136,8 +136,8 @@ sed -i "s/vars.mysql_password = \"<mysql_icinga2_psw>\"/vars.mysql_password = \"
 sed -i "s/^ICINGA2_DB_PASSWORD=$/ICINGA2_DB_PASSWORD=$mysql_icinga2_psw/" /etc/nmsprime/env/provmon.env
 systemctl enable icinga2
 systemctl start icinga2
-systemctl enable rh-php71-php-fpm
-systemctl start rh-php71-php-fpm
+systemctl enable rh-php73-php-fpm
+systemctl start rh-php73-php-fpm
 icinga2 feature enable ido-mysql
 icinga2 feature enable command
 icinga2 api setup
@@ -160,7 +160,7 @@ sed -i -e "s/^endpoint = \"<hostname>\"$/endpoint = \"$(hostname)\"/" \
   -e "s/^password = \"<director_api_psw>\"$/password = \"$director_api_psw\"/" /etc/icingaweb2/modules/director/kickstart.ini
 sed -i "s/^password = \"<cmdtransport_api_psw>\"$/password = \"$cmdtransport_api_psw\"/" /etc/icingaweb2/modules/monitoring/commandtransports.ini
 systemctl restart httpd
-systemctl restart rh-php71-php-fpm
+systemctl restart rh-php73-php-fpm
 icingacli module enable director
 icingacli director migration run
 echo "127.0.0.1 $(hostname)" >> /etc/hosts
@@ -218,6 +218,9 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Fri Dec 04 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.4.2-10
+- migrate to php73
+
 * Mon May 04 2020 Ole Ernst <ole.ernst@roetzer-engineering.com> - 1.4.2-9
 - allow parent_id to be both 0 and NULL
 
