@@ -3,7 +3,7 @@
 
 cd '/tftpboot'
 for type in cm mta; do
-	comm=$(comm -3 <(printf '%s\0' $type/$type-*.conf | xargs -r0 ls -1q | sort | cut -d'.' -f1) <(printf '%s\0' $type/$type-*.cfg | xargs -r0 ls -1q | sort | cut -d'.' -f1))
+	comm=$(comm -3 <(printf '%s\0' $type/$type-*.conf | xargs -r0 ls -1q | cut -d'.' -f1 | sort) <(printf '%s\0' $type/$type-*.cfg | xargs -r0 ls -1q | cut -d'.' -f1 | sort))
 	if [[ "$comm" ]]; then
 		echo "CRITICAL - not all $type configfiles were generated:"
 		echo "$comm"
