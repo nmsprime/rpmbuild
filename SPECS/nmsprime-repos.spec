@@ -1,5 +1,5 @@
 Name: nmsprime-repos
-Version: 2.6.0
+Version: 3.0.0
 Release: 1
 Summary: NMS Prime and dependency RPM repos
 
@@ -42,5 +42,5 @@ rm mongodb-org-4.4.repo
 %config(noreplace) %{_sysconfdir}/yum.repos.d/*
 
 %changelog
-* Wed Jan 13 2021 Ole Ernst <ole.ernst@nmsprime.com> - 2.6.0-1
+* Wed Jan 13 2021 Ole Ernst <ole.ernst@nmsprime.com> - 3.0.0-1
 - Initial RPM release
