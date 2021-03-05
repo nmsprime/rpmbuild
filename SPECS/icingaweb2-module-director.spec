@@ -132,6 +132,7 @@ sed -i -e 's|//user =.*|user = "icinga2user"|' \
   -e "s|//password =.*|password = \"$mysql_icinga2_psw\"|" \
   -e 's|//host|host|' \
   -e 's|//database =.*|database = "icinga2"|' /etc/icinga2/features-available/ido-mysql.conf
+chown icinga:icinga /etc/icinga2/features-available/ido-mysql.conf
 sed -i "s/vars.mysql_password = \"<mysql_icinga2_psw>\"/vars.mysql_password = \"$mysql_icinga2_psw\"/" /etc/icinga2/conf.d/nmsprime-services.conf
 sed -i "s/^ICINGA2_DB_PASSWORD=$/ICINGA2_DB_PASSWORD=$mysql_icinga2_psw/" /etc/nmsprime/env/provmon.env
 systemctl enable icinga2

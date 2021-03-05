@@ -9,3 +9,14 @@
              if (array_key_exists($group, $this->groups)) {
                  return $this;
              }
+--- a/library/vendor/ipl/Web/Table/QueryBasedTable.php
++++ b/library/vendor/ipl/Web/Table/QueryBasedTable.php
+@@ -110,7 +110,7 @@
+ 
+     public function renderContent()
+     {
+-        if (count($this->getColumnsToBeRendered())) {
++        if ($this->getColumnsToBeRendered() && count($this->getColumnsToBeRendered())) {
+             $this->generateHeader();
+         }
+         $this->fetchRows();
