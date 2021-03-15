@@ -17,7 +17,7 @@ This package contains the nmsprime and dependency RPM repos.
 cat << EOF >> nmsprime.repo
 [nmsprime]
 name=NMS Prime
-baseurl=https://repo.nmsprime.com/rpm/nmsprime
+baseurl=https://repo.nmsprime.com/rpm/nmsprimeOS
 enabled=1
 gpgcheck=0
 sslverify=1
