@@ -1,0 +1,228 @@
+diff --git a/src/docsis.c b/src/docsis.c
+index a0d0ba2..d0b27a7 100644
+--- a/src/docsis.c
++++ b/src/docsis.c
+@@ -154,6 +154,23 @@ add_mta_hash (unsigned char *tlvbuf, unsigned int tlvbuflen, unsigned int hash)
+     memcpy (tlvbuf + tlvbuflen - 3, "\x0b\x26\x30\x24\x06\x0c\x2b\x06\x01\x04\x01\xba\x08\x01\x01\x02\x09\x00\x04\x14", 20);
+     tlvbuflen += 17;
+   }
++  if (hash == 3) {
++    /*
++    https://github.com/rlaager/docsis/issues/66 (thx @stephb9959)
++    \x0b - TLV11 (SNMP object in config file)
++    \x25 - full length (1+1+1+1+11+1+1+20 = 37)
++    \x30 - OID to come
++    \x23 - OID + payload length (1+1+11+1+1+20 = 35)
++    \x06 - OID to come
++    \x0b - length (11) of pktcMtaDevProvConfigHash
++    \x2b\x06\x01\x02\x01\x81\x0c\x01\x02\x0b\x00 - pktcMtaDevProvConfigHash (RFC4682)
++    \x04 - bitstring
++    \x14 - length (20) of payload
++    payload - SHA1 hash (20 bytes)
++    */
++    memcpy (tlvbuf + tlvbuflen - 3, "\x0b\x25\x30\x23\x06\x0b\x2b\x06\x01\x02\x01\x81\x0c\x01\x02\x0b\x00\x04\x14",19);
++    tlvbuflen += 16;
++  }
+ 
+   memcpy (tlvbuf + tlvbuflen, hash_value, SHA_DIGEST_LENGTH);
+   tlvbuflen += SHA_DIGEST_LENGTH;
+@@ -164,7 +181,7 @@ add_mta_hash (unsigned char *tlvbuf, unsigned int tlvbuflen, unsigned int hash)
+ }
+ 
+ static unsigned int
+-add_dialplan (unsigned char *tlvbuf, unsigned int tlvbuflen) {
++add_dialplan (unsigned char *tlvbuf, unsigned int tlvbuflen, char *dialplan_filename) {
+   FILE *dialplan_file;
+   char *dialplan_buffer;
+   unsigned int fileSize;
+@@ -174,9 +191,9 @@ add_dialplan (unsigned char *tlvbuf, unsigned int tlvbuflen) {
+   unsigned short local_char;
+   unsigned short *p_local_char = &local_char;
+ 
+-  dialplan_file = fopen("dialplan.txt", "rb");
++  dialplan_file = fopen(dialplan_filename ? dialplan_filename : "dialplan.txt", "rb");
+   if (!dialplan_file) {
+-    fprintf(stderr, "Cannot open dialplan.txt file, fatal error, closing.\n");
++    fprintf(stderr, "Cannot open dialplan file, fatal error, closing.\n");
+     exit(-1);
+   }
+   fseek(dialplan_file, 0, SEEK_END);
+@@ -282,8 +299,8 @@ usage ()
+ 	"	-M \"PATH1:PATH2\"\n"
+ 	"		Specify the SNMP MIB directory when encoding or decoding configuration\n"
+ 	"		files.\n\n"
+-	"	-na | -eu\n"
+-	"		Adds CableLabs PacketCable or Excentis EuroPacketCable SHA1 hash\n"
++	"	-na | -eu | -ietf\n"
++	"		Adds CableLabs PacketCable / Excentis EuroPacketCable / IETF SHA1 hash\n"
+ 	"		when encoding an MTA config file.\n\n"
+ 	"	-dialplan\n"
+ 	"		Adds a PC20 dialplan from an external file called \"dialplan.txt\" in\n"
+@@ -303,7 +320,7 @@ main (int argc, char *argv[])
+ {
+   unsigned char key[65];
+   FILE *kf;
+-  char *config_file=NULL, *key_file=NULL, *output_file=NULL, *extension_string=NULL, *custom_mibs=NULL;
++  char *config_file=NULL, *key_file=NULL, *output_file=NULL, *extension_string=NULL, *custom_mibs=NULL, *dialplan_filename=NULL;
+   unsigned int keylen = 0;
+   unsigned int encode_docsis = FALSE, decode_bin = FALSE, hash = 0;
+   int i;
+@@ -355,8 +372,18 @@ main (int argc, char *argv[])
+       continue;
+     }
+ 
++    if (!strcmp (argv[0], "-ietf")) {
++      if (hash) {
++        usage();
++      }
++      hash = 3;
++      continue;
++    }
++
+     if (!strcmp (argv[0], "-dialplan")) {
+       dialplan = 1;
++      dialplan_filename = argv[1];
++      argc--; argv++;
+       continue;
+     }
+ 
+@@ -466,7 +493,7 @@ main (int argc, char *argv[])
+ 			}
+ 
+ 			fprintf(stderr, "Processing input file %s: output to  %s\n",argv[i], output_file);
+-			if (encode_one_file (argv[i], output_file, key, keylen, encode_docsis, hash)) {
++			if (encode_one_file (argv[i], output_file, key, keylen, encode_docsis, hash, dialplan_filename)) {
+ 				exit(2);
+ 			}
+ 			free (output_file);
+@@ -480,7 +507,7 @@ main (int argc, char *argv[])
+ 				continue;
+ 			}
+ 			fprintf (stderr, "Processing input file %s: output to  %s\n",argv[i], output_file);
+-			if (encode_one_file (argv[i], output_file, key, keylen, encode_docsis, hash)) {
++			if (encode_one_file (argv[i], output_file, key, keylen, encode_docsis, hash, dialplan_filename)) {
+ 				exit(2);
+ 			}
+ 			free (output_file);
+@@ -488,7 +515,7 @@ main (int argc, char *argv[])
+ 		}
+ 	}
+   } else {
+-	if (encode_one_file (config_file, output_file, key, keylen, encode_docsis, hash)) {
++	if (encode_one_file (config_file, output_file, key, keylen, encode_docsis, hash, dialplan_filename)) {
+ 		exit(2);
+ 	}
+ 	/* encode argv[1] */
+@@ -499,7 +526,7 @@ main (int argc, char *argv[])
+ }
+ 
+ int encode_one_file ( char *input_file, char *output_file,
+-	 		unsigned char *key, unsigned int keylen, int encode_docsis, unsigned int hash)
++	 		unsigned char *key, unsigned int keylen, int encode_docsis, unsigned int hash, char *dialplan_filename)
+ {
+   int parse_result=0;
+   unsigned int buflen;
+@@ -549,7 +576,7 @@ int encode_one_file ( char *input_file, char *output_file,
+ 
+   if (dialplan == 1) {
+     printf("Adding PC20 dialplan from external file.\n");
+-    buflen = add_dialplan (buffer, buflen);
++    buflen = add_dialplan (buffer, buflen, dialplan_filename);
+   }
+ 
+   if (hash == 1) {
+@@ -560,6 +587,10 @@ int encode_one_file ( char *input_file, char *output_file,
+     printf("Adding EU ConfigHash to MTA file.\n");
+     buflen = add_mta_hash (buffer, buflen, hash);
+   }
++  if (hash == 3) {
++    printf("Adding IETF ConfigHash to MTA file.\n");
++    buflen = add_mta_hash (buffer, buflen, hash);
++  }
+ 
+   fprintf (stdout, "Final content of config file:\n");
+ 
+diff --git a/src/docsis.h b/src/docsis.h
+index 407040a..78be17d 100644
+--- a/src/docsis.h
++++ b/src/docsis.h
+@@ -98,7 +98,7 @@ int parse_config_file (char *file, struct tlv **parse_tree_result);
+ int yylex (void);
+ void decode_file (char *file);
+ int encode_one_file (char *input_file, char *output_file,
+-		       unsigned char *key, unsigned int keylen, int encode_docsis, unsigned int hash);
++		       unsigned char *key, unsigned int keylen, int encode_docsis, unsigned int hash, char *dialplan_filename);
+ char *get_output_name (char *input_path, char *new_extension);
+ 
+ #endif /* __DOCSIS_H */
+diff --git a/src/docsis_common.h b/src/docsis_common.h
+index a3aeefe..b94460e 100644
+--- a/src/docsis_common.h
++++ b/src/docsis_common.h
+@@ -32,11 +32,11 @@
+ 
+ 
+ #ifndef NUM_IDENTIFIERS
+-#define NUM_IDENTIFIERS 1427
++#define NUM_IDENTIFIERS 9000
+ #endif /*  NUM_IDENTIFIERS, needed in docsis_symtable.h  */
+ 
+ #define MAXINT 2000000000
+-#define TLV_VSIZE 1024
++#define TLV_VSIZE 16384
+ #define TRUE 1
+ #define FALSE 0
+ 
+diff --git a/src/docsis_decode.c b/src/docsis_decode.c
+index b0a5b77..f4e6ce5 100644
+--- a/src/docsis_decode.c
++++ b/src/docsis_decode.c
+@@ -293,8 +293,10 @@ void decode_oid (unsigned char *tlvbuf, symbol_type *sym, size_t length )
+ 
+ void decode_snmp_object (unsigned char *tlvbuf, symbol_type *sym, size_t length )
+ {
+-  void *pj = malloc(17);
++  void *pg = malloc(14);
++  void *ph = malloc(14);
+   void *pi = malloc(17);
++  void *pj = malloc(17);
+   void *pk = malloc(15);
+   void *pl = malloc(15);
+   void *pm = malloc(19);
+@@ -325,6 +327,16 @@ void decode_snmp_object (unsigned char *tlvbuf, symbol_type *sym, size_t length
+       printf("\n");
+       goto bailout;
+     }
++    memcpy (pg,"\x30\x23\x06\x0b\x2b\x06\x01\x02\x01\x81\x0c\x01\x02\x0b", 14);
++    memcpy (ph, tlvbuf, 14);
++    if ( *(int*)pg == *(int*)ph ) {
++      printf("/* ");
++      printf("%s ", sym->sym_ident);
++      decode_vbind (tlvbuf, length );
++      printf(" */");
++      printf("\n");
++      goto bailout;
++    }
+   }
+ 
+   // when dialplan is shorter than 7F
+@@ -358,14 +370,15 @@ void decode_snmp_object (unsigned char *tlvbuf, symbol_type *sym, size_t length
+     printf("PC20 dialplan found, dialplan.txt file created.");
+     printf(" */");
+     printf("\n");
+-  } else {
+-    printf("%s ", sym->sym_ident);
+-    decode_vbind (tlvbuf, length );
+-    printf("\n");
+   }
++  printf("%s ", sym->sym_ident);
++  decode_vbind (tlvbuf, length );
++  printf("\n");
+ 
+   bailout:
+ 
++  free(pg);
++  free(ph);
+   free(pi);
+   free(pj);
+   free(pk);
