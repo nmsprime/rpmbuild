@@ -1,12 +1,13 @@
 Name: docsis
-Version: 0.9.8.r391.g6b23fd2
+Version: 0.9.8.r393.gd7c9643
 Release: 1
 Summary: Human-readable text to binary configuration file converter
 
 Group: Applications/Communications
 License: GPLv2
 URL: http://docsis.sourceforge.net
-Source: https://github.com/rlaager/%{name}/archive/6b23fd2.tar.gz
+Source: https://github.com/rlaager/%{name}/archive/d7c9643.tar.gz
+Patch: docsis_dialplan.patch
 
 BuildRequires: autoconf automake libtool glib2-devel bison flex net-snmp-devel
 
@@ -16,7 +17,7 @@ text configuration file. This tool is fully compliant with the following specs:
 CM-SP-eRouter-I12, DPoE-SP-DEMARCv1.0-I04, CM-SP-L2VPN-I13, CM-SP-MULPIv3.0-I24
 
 %prep
-%autosetup -n docsis-6b23fd289c54c7ef51ba4bb81f7d2b4edf6b3ae3
+%autosetup -p1 -n docsis-d7c9643a66bff27278cf9096e7e4a6b7c0427142
 
 %build
 ./autogen.sh
@@ -35,5 +36,8 @@ cp mibs/*.txt %{buildroot}%{_datarootdir}/snmp/mibs
 %{_datarootdir}/snmp/mibs/*.txt
 
 %changelog
-* Mon Jun 12 2017 Ole Ernst <ole.ernst@roetzer-engineering.com> - 0.9.5.r391.g6b23fd2-1
+* Wed May 05 2021 Ole Ernst <ole.ernst@nmsprime.com> - 0.9.8.r393.gd7c9643-1
+- Add dialplan from user-supplied file and add IETF MTA hash
+
+* Mon Jun 12 2017 Ole Ernst <ole.ernst@roetzer-engineering.com> - 0.9.8.r391.g6b23fd2-1
 - Initial RPM release
