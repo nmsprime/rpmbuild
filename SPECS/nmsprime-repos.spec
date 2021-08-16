@@ -45,7 +45,7 @@ sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
 EOF
 
-cat << EOF > /etc/yum.repos.d/grafana.repo
+cat << EOF > grafana.repo
 [grafana]
 name=grafana
 baseurl=https://packages.grafana.com/oss/rpm
