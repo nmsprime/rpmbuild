@@ -1,5 +1,5 @@
 Name: modempoller-nmsprime
-Version: 0.0.1
+Version: 0.0.2
 Release: 1
 Summary: A highly efficient modem snmp poller
 
@@ -26,5 +26,7 @@ install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}
 %{_bindir}/%{name}
 
 %changelog
+* Tue Aug 24 2021 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.2-1
+- Rebuild using nmsprime.modem rather than cacti.host
 * Mon May 06 2019 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.1-1
 - Initial RPM release
