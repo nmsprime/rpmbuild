@@ -1,3 +1,4 @@
 Defaults:icinga lecture=never,!requiretty
 icinga ALL=(root) NOPASSWD: /usr/lib64/nagios/plugins/check_dhcpd-pools.sh
 icinga ALL=(root) NOPASSWD: /opt/rh/rh-php73/root/usr/bin/php /var/www/nmsprime/artisan nms\:debug-status
+icinga ALL=(root) NOPASSWD: /usr/bin/supervisorctl status
