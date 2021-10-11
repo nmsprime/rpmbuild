@@ -227,11 +227,11 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
-* Wed Oct 27 2021 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-2
-- update dependencies to PHP 8
-
-* Wed Oct 27 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.8.1-1
+* Wed Oct 27 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.8.1-2
 - update to version 1.8.1
+
+* Fri Oct 08 2021 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-1
+- update dependencies to PHP 8
 
 * Fri Dec 04 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.4.2-10
 - migrate to php73
