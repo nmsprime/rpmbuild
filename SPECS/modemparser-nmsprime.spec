@@ -1,7 +1,7 @@
 Name: modemparser-nmsprime
 Version: 0.0.1
 Release: 1
-Summary: A highly efficient modem parser
+Summary: A highly efficient modem parser written in Rust
 
 Group: Applications/Communications
 License: GPLv3
@@ -11,7 +11,7 @@ Source: https://github.com/nmsprime/modemparser/archive/refs/heads/main.tar.gz
 BuildRequires: cargo openssl-devel rust
 
 %description
-A highly efficient modem parser for DOCSIS / SNMP and CWMP / TR069 devices.
+A highly efficient modem parser for DOCSIS / SNMP and CWMP / TR069 devices written in Rust.
 
 %prep
 %autosetup -p1 -n modemparser-main
