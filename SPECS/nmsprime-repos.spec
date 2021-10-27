@@ -1,6 +1,6 @@
 Name: nmsprime-repos
-Version: 3.0.0
-Release: 2
+Version: 3.1.0
+Release: 1
 Summary: NMS Prime and dependency RPM repos
 
 Group: Applications/Communications
@@ -61,11 +61,21 @@ sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 EOF
 
+cat << EOF > remi-php.repo
+[remi-php80]
+name=Remi's PHP 8.0 RPM repository for Enterprise Linux 7 - $basearch
+mirrorlist=http://cdn.remirepo.net/enterprise/7/php80/mirror
+enabled=1
+gpgcheck=1
+gpgkey=https://rpms.remirepo.net/RPM-GPG-KEY-remi
+EOF
+
 %install
 install -Dm 644 nmsprime.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime.repo
 install -Dm 644 mongodb-org-4.4.repo %{buildroot}%{_sysconfdir}/yum.repos.d/mongodb-org-4.4.repo
 install -Dm 644 timescale_timescaledb.repo %{buildroot}%{_sysconfdir}/yum.repos.d/timescale_timescaledb.repo
 install -Dm 644 grafana.repo %{buildroot}%{_sysconfdir}/yum.repos.d/grafana.repo
+install -Dm 644 remi-php.repo %{buildroot}%{_sysconfdir}/yum.repos.d/remi-php.repo
 install -Dm 644 ./etc/yum.repos.d/pgdg-redhat-all.repo %{buildroot}%{_sysconfdir}/yum.repos.d/pgdg-redhat-all.repo
 install -Dm 644 ./etc/yum.repos.d/ICINGA-release.repo %{buildroot}%{_sysconfdir}/yum.repos.d/ICINGA-release.repo
 install -Dm 644 ./etc/pki/rpm-gpg/RPM-GPG-KEY-ICINGA %{buildroot}%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-ICINGA
@@ -75,6 +85,7 @@ rm nmsprime.repo
 rm mongodb-org-4.4.repo
 rm timescale_timescaledb.repo
 rm grafana.repo
+rm remi-php.repo
 rm -rf ./etc
 rm -rf ./usr
 
@@ -83,6 +94,9 @@ rm -rf ./usr
 %config(noreplace) %{_sysconfdir}/*
 
 %changelog
+* Wed Oct 27 2021 Christian Schramm <christian.schramm@nmsprime.com> - 3.1.0-1
+- Add PHP 8 repositories
+
 * Wed Jan 13 2021 Ole Ernst <ole.ernst@nmsprime.com> - 3.0.0-2
 - Add Grafana, Icinga, Postgresql, TimescaleDB repositories
 
