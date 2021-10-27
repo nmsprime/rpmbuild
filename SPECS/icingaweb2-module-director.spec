@@ -39,7 +39,7 @@ sed 's|/usr/local/nagios/libexec|/usr/lib64/nagios/plugins|;s/Net::SNMP->VERSION
 cd %{name}-%{version}
 patch -p1 -i ../hostgroup.patch
 rm ../hostgroup.patch
-sed -i 's/User=icingadirector/User=icinga/' contrib/systemd/icinga-director.service
+sed -i 's/User=icingadirector/User=apache/' contrib/systemd/icinga-director.service
 
 %install
 install -d %{buildroot}%{_unitdir}
