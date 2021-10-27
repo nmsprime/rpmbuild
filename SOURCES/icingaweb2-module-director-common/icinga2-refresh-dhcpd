@@ -1,1 +1,1 @@
-*/5 * * * * root /usr/bin/bash -c 'test -z "$(icingacli monitoring list services --service=systemd_service_dhcpd --problems)" || /usr/bin/scl enable rh-php73 "php /var/www/nmsprime/artisan nms:dhcp"' > /dev/null 2>&1
+*/5 * * * * root /usr/bin/bash -c 'test -z "$(icingacli monitoring list services --service=systemd_service_dhcpd --problems)" || /usr/bin/scl enable php80 "php /var/www/nmsprime/artisan nms:dhcp"' > /dev/null 2>&1

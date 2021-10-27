@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.8.1
-Release: 1
+Release: 2
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -17,9 +17,9 @@ Source7: https://raw.githubusercontent.com/hrix/nagios-plugin-ip_conntrack/maste
 Source8: https://gitlab.com/argaar/nagios-plugins/raw/master/check%20symmetra%20apc/check_apc.pl
 Source9: https://raw.githubusercontent.com/melmorabity/nagios-plugin-systemd-service/master/check_systemd_service.sh
 
-Requires: bc dhcpd-pools icinga2 icinga2-ido-mysql icingacli icingaweb2 nagios-plugins-all
+Requires: bc dhcpd-pools icinga2 icinga2-ido-mysql icingacli icingaweb2 icingaweb2-module-incubator nagios-plugins-all
 Requires: nmsprime-hfcreq nmsprime-provmon perl-Nagios-Plugin perl-Net-SNMP
-Requires: perl-Readonly perl-Switch rh-php73-php-ldap icingaweb2-module-incubator
+Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl icingaweb2-module-incubator
 
 %description
 Icinga Director has been designed to make Icinga 2 configuration handling easy.
@@ -39,7 +39,7 @@ sed 's|/usr/local/nagios/libexec|/usr/lib64/nagios/plugins|;s/Net::SNMP->VERSION
 cd %{name}-%{version}
 patch -p1 -i ../hostgroup.patch
 rm ../hostgroup.patch
-sed -i 's/User=icingadirector/User=icinga/' contrib/systemd/icinga-director.service
+sed -i 's/User=icingadirector/User=apache/' contrib/systemd/icinga-director.service
 
 %install
 install -d %{buildroot}%{_unitdir}
@@ -142,8 +142,8 @@ sed -i "s/vars.mysql_password = \"<mysql_icinga2_psw>\"/vars.mysql_password = \"
 sed -i "s/^ICINGA2_DB_PASSWORD=$/ICINGA2_DB_PASSWORD=$mysql_icinga2_psw/" /etc/nmsprime/env/provmon.env
 systemctl enable icinga2
 systemctl start icinga2
-systemctl enable rh-php73-php-fpm
-systemctl start rh-php73-php-fpm
+systemctl enable php80-php-fpm
+systemctl start php80-php-fpm
 systemctl enable icinga-director
 systemctl start icinga-director
 icinga2 feature enable ido-mysql
@@ -168,7 +168,7 @@ sed -i -e "s/^endpoint = \"<hostname>\"$/endpoint = \"$(hostname)\"/" \
   -e "s/^password = \"<director_api_psw>\"$/password = \"$director_api_psw\"/" /etc/icingaweb2/modules/director/kickstart.ini
 sed -i "s/^password = \"<cmdtransport_api_psw>\"$/password = \"$cmdtransport_api_psw\"/" /etc/icingaweb2/modules/monitoring/commandtransports.ini
 systemctl restart httpd
-systemctl restart rh-php73-php-fpm
+systemctl restart php80-php-fpm
 icingacli module enable director
 icingacli director migration run
 echo "127.0.0.1 $(hostname)" >> /etc/hosts
@@ -227,8 +227,11 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
-* Wed Oct 27 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.8.1-1
+* Wed Oct 27 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.8.1-2
 - update to version 1.8.1
+
+* Fri Oct 08 2021 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-1
+- update dependencies to PHP 8
 
 * Fri Dec 04 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.4.2-10
 - migrate to php73
