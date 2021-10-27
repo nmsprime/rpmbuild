@@ -39,18 +39,33 @@ exit=0
 status='OK'
 text=''
 for file in /etc/dhcp-nmsprime/cmts_gws/*.conf; do
-	dir=$(mktemp -d)
+	dir="$(mktemp -d)"
+	tmp="$(mktemp -p "$dir")"
 	net=$(grep shared-network "$file" | cut -d'"' -f2)
-	while read subnet; do
-		read -r -a pool <<< "$subnet"
-		# filter for start and stop IP and get rid of net name,
-		# which may contain a colon or double-quoting, making csv parsing harder
-		grep -o "${pool[1]},${pool[2]}.*" <<< "$pools" >> "$dir/${pool[0]}"
-	done < <(grep -o "#pool:.*" "$file" | cut -d' ' -f2-4)
+
+	while read line; do
+		if [[ "$line" =~ ^range ]]
+		then
+			read -r -a line <<< "$line"
+
+			# single IP range: start and end columns are the same
+			if [[ "${#line[@]}" -eq 2 ]]; then
+				line+=("${line[1]}")
+			fi
+
+			# filter for start and stop IP and get rid of net name,
+			# which may contain a colon or double-quoting, making csv parsing harder
+			grep -o "${line[1]},${line[2]}.*" <<< "$pools" >> "$tmp"
+		else
+			# append current range to global range file (one for each ippool type)
+			cat "$tmp" >> "$dir/$(cut -d'"' -f2 <<< "$line")"
+			truncate -s 0 "$tmp"
+		fi
+	done < <(grep 'range\|allow members of' "$file" | sed 's/;$//')
 
 	for file in "$dir"/*; do
-		# skip if folder is empty
-		[ -f "$file" ] || continue
+		# skip if file doesn't exist or is empty
+		[ -s "$file" ] || continue
 
 		read -r -a stats < <(awk -F',' '{all+=$3; used+=$4} END{printf("%.0f %d %d", used/all*100, all-used, all);}' "$file")
 

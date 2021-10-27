@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
-Version: 1.4.2
-Release: 10
+Version: 1.8.1
+Release: 2
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -17,9 +17,9 @@ Source7: https://raw.githubusercontent.com/hrix/nagios-plugin-ip_conntrack/maste
 Source8: https://gitlab.com/argaar/nagios-plugins/raw/master/check%20symmetra%20apc/check_apc.pl
 Source9: https://raw.githubusercontent.com/melmorabity/nagios-plugin-systemd-service/master/check_systemd_service.sh
 
-Requires: bc dhcpd-pools icinga2 icinga2-ido-mysql icingacli icingaweb2 nagios-plugins-all
+Requires: bc dhcpd-pools icinga2 icinga2-ido-mysql icingacli icingaweb2 icingaweb2-module-incubator nagios-plugins-all
 Requires: nmsprime-hfcreq nmsprime-provmon perl-Nagios-Plugin perl-Net-SNMP
-Requires: perl-Readonly perl-Switch rh-php73-php-ldap
+Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl icingaweb2-module-incubator
 
 %description
 Icinga Director has been designed to make Icinga 2 configuration handling easy.
@@ -39,8 +39,11 @@ sed 's|/usr/local/nagios/libexec|/usr/lib64/nagios/plugins|;s/Net::SNMP->VERSION
 cd %{name}-%{version}
 patch -p1 -i ../hostgroup.patch
 rm ../hostgroup.patch
+sed -i 's/User=icingadirector/User=apache/' contrib/systemd/icinga-director.service
 
 %install
+install -d %{buildroot}%{_unitdir}
+cp %{name}-%{version}/contrib/systemd/icinga-director.service %{buildroot}%{_unitdir}/icinga-director.service
 install -d %{buildroot}%{_datarootdir}/icingaweb2/modules
 mv %{name}-%{version} %{buildroot}%{_datarootdir}/icingaweb2/modules/director
 install -d %{buildroot}%{_sysconfdir}/icinga2
@@ -72,7 +75,7 @@ nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2
 nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 nmsprime_user=$(grep 'username' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 nmsprime_pw=$(grep 'password' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-mysql --batch "$nmsprime_name" -u "$nmsprime_user" --password="$nmsprime_pw" -e "SELECT id, name FROM netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) AND id > 2 AND id < 1000;" | tail -n +2 | while read id name; do
+mysql --batch "$nmsprime_name" -u "$nmsprime_user" --password="$nmsprime_pw" -e "SELECT id, name FROM netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) AND id < 1000;" | tail -n +2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     continue
@@ -105,9 +108,11 @@ grep -q 'vars.procs_warning' /etc/icinga2/conf.d/hosts.conf || sed -i '/import "
 
 systemctl daemon-reload
 systemctl restart icinga2
+systemctl enable icinga-director
+systemctl restart icinga-director
 exit 0
 fi
-# end of %post
+# end of update
 
 mysql_root_psw=$(grep ROOT_DB_PASSWORD /etc/nmsprime/env/root.env | cut -d'=' -f2)
 mysql_nmsprime_psw=$(grep DB_PASSWORD /etc/nmsprime/env/global.env | cut -d'=' -f2)
@@ -137,8 +142,10 @@ sed -i "s/vars.mysql_password = \"<mysql_icinga2_psw>\"/vars.mysql_password = \"
 sed -i "s/^ICINGA2_DB_PASSWORD=$/ICINGA2_DB_PASSWORD=$mysql_icinga2_psw/" /etc/nmsprime/env/provmon.env
 systemctl enable icinga2
 systemctl start icinga2
-systemctl enable rh-php73-php-fpm
-systemctl start rh-php73-php-fpm
+systemctl enable php80-php-fpm
+systemctl start php80-php-fpm
+systemctl enable icinga-director
+systemctl start icinga-director
 icinga2 feature enable ido-mysql
 icinga2 feature enable command
 icinga2 api setup
@@ -161,7 +168,7 @@ sed -i -e "s/^endpoint = \"<hostname>\"$/endpoint = \"$(hostname)\"/" \
   -e "s/^password = \"<director_api_psw>\"$/password = \"$director_api_psw\"/" /etc/icingaweb2/modules/director/kickstart.ini
 sed -i "s/^password = \"<cmdtransport_api_psw>\"$/password = \"$cmdtransport_api_psw\"/" /etc/icingaweb2/modules/monitoring/commandtransports.ini
 systemctl restart httpd
-systemctl restart rh-php73-php-fpm
+systemctl restart php80-php-fpm
 icingacli module enable director
 icingacli director migration run
 echo "127.0.0.1 $(hostname)" >> /etc/hosts
@@ -196,7 +203,7 @@ REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL
 REPLACE INTO `director_job` VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL);
 REPLACE INTO `director_job_setting` VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1');
 EOF
-mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "SELECT id, name FROM netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) AND id > 0 AND id < 1000;" | tail -n +2 | while read id name; do
+mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "SELECT id, name FROM netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) AND id < 1000;" | tail -n +2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     continue
@@ -205,6 +212,7 @@ mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "SELECT i
 done
 
 %files
+%{_unitdir}/*.service
 %{_sysconfdir}/cron.d/*
 %{_datarootdir}/icingaweb2/modules/director/*
 %attr(0755, -, -) %{_libdir}/nagios/plugins/*
@@ -219,6 +227,12 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Wed Oct 27 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.8.1-2
+- update to version 1.8.1
+
+* Fri Oct 08 2021 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-1
+- update dependencies to PHP 8
+
 * Fri Dec 04 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.4.2-10
 - migrate to php73
 
