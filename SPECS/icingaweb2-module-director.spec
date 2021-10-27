@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
-Version: 1.4.2
-Release: 10
+Version: 1.8.1
+Release: 1
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -19,7 +19,7 @@ Source9: https://raw.githubusercontent.com/melmorabity/nagios-plugin-systemd-ser
 
 Requires: bc dhcpd-pools icinga2 icinga2-ido-mysql icingacli icingaweb2 nagios-plugins-all
 Requires: nmsprime-hfcreq nmsprime-provmon perl-Nagios-Plugin perl-Net-SNMP
-Requires: perl-Readonly perl-Switch rh-php73-php-ldap
+Requires: perl-Readonly perl-Switch rh-php73-php-ldap icingaweb2-module-incubator
 
 %description
 Icinga Director has been designed to make Icinga 2 configuration handling easy.
@@ -39,8 +39,11 @@ sed 's|/usr/local/nagios/libexec|/usr/lib64/nagios/plugins|;s/Net::SNMP->VERSION
 cd %{name}-%{version}
 patch -p1 -i ../hostgroup.patch
 rm ../hostgroup.patch
+sed -i 's/User=icingadirector/User=icinga/' contrib/systemd/icinga-director.service
 
 %install
+install -d %{buildroot}%{_unitdir}
+cp %{name}-%{version}/contrib/systemd/icinga-director.service %{buildroot}%{_unitdir}/icinga-director.service
 install -d %{buildroot}%{_datarootdir}/icingaweb2/modules
 mv %{name}-%{version} %{buildroot}%{_datarootdir}/icingaweb2/modules/director
 install -d %{buildroot}%{_sysconfdir}/icinga2
@@ -105,9 +108,11 @@ grep -q 'vars.procs_warning' /etc/icinga2/conf.d/hosts.conf || sed -i '/import "
 
 systemctl daemon-reload
 systemctl restart icinga2
+systemctl enable icinga-director
+systemctl restart icinga-director
 exit 0
 fi
-# end of %post
+# end of update
 
 mysql_root_psw=$(grep ROOT_DB_PASSWORD /etc/nmsprime/env/root.env | cut -d'=' -f2)
 mysql_nmsprime_psw=$(grep DB_PASSWORD /etc/nmsprime/env/global.env | cut -d'=' -f2)
@@ -139,6 +144,8 @@ systemctl enable icinga2
 systemctl start icinga2
 systemctl enable rh-php73-php-fpm
 systemctl start rh-php73-php-fpm
+systemctl enable icinga-director
+systemctl start icinga-director
 icinga2 feature enable ido-mysql
 icinga2 feature enable command
 icinga2 api setup
@@ -205,6 +212,7 @@ mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "SELECT i
 done
 
 %files
+%{_unitdir}/*.service
 %{_sysconfdir}/cron.d/*
 %{_datarootdir}/icingaweb2/modules/director/*
 %attr(0755, -, -) %{_libdir}/nagios/plugins/*
@@ -219,6 +227,9 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Wed Oct 27 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.8.1-1
+- update to version 1.8.1
+
 * Fri Dec 04 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.4.2-10
 - migrate to php73
 
