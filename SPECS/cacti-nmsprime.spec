@@ -1,16 +1,16 @@
 %{!?_pkgdocdir: %global _pkgdocdir %{_docdir}/%{name}-%{version}}
+%define name_org cacti
 
-Name: cacti
-Version: 1.2.15
+Name: cacti-nmsprime
+Version: 1.2.18
 Release: 1%{?dist}
 Summary: An rrd based graphing tool
 License: GPLv2+
 URL: https://www.cacti.net/
-Source0: https://www.cacti.net/downloads/%{name}-%{version}.tar.gz
+Source0: https://www.cacti.net/downloads/%{name_org}-%{version}.tar.gz
 Source1: cacti-httpd.conf
 Source2: cacti.logrotate
-Source3: cacti.README.fedora
-Source4: %{name}.cron
+Source3: %{name_org}.cron
 Patch0: cacti-1.2.x-disable_log_rotation.patch
 Patch1: cacti-1.2.x-csrf-secret.patch
 
@@ -70,50 +70,49 @@ data in a MySQL database. The frontend is completely PHP
 driven.
 
 %prep
-%autosetup -p1
+%autosetup -p1 -n %{name_org}-%{version}
 
 %build
 # Nothing to build
 
 %install
-%{__mkdir} -p %{buildroot}/%{_sysconfdir}/%{name}
+%{__mkdir} -p %{buildroot}/%{_sysconfdir}/%{name_org}
 %{__install} -d -m 0755 %{buildroot}/%{_pkgdocdir}
-%{__install} -d -m 0755 %{buildroot}/%{_datadir}/%{name}/
-%{__install} -d -m 0755 cache/ %{buildroot}/%{_localstatedir}/lib/%{name}/cache
-%{__install} -d -m 0755 cli/ %{buildroot}/%{_localstatedir}/lib/%{name}/cli
-%{__install} -d -m 0775 log/ %{buildroot}/%{_localstatedir}/log/%{name}/
-%{__install} -d -m 0755 resource/ %{buildroot}/%{_localstatedir}/lib/%{name}/resource
-%{__install} -d -m 0755 rra/ %{buildroot}/%{_localstatedir}/lib/%{name}/rra/
-%{__install} -d -m 0755 scripts/ %{buildroot}/%{_localstatedir}/lib/%{name}/scripts/
-%{__install} -d -m 0755 csrf/ %{buildroot}/%{_localstatedir}/lib/%{name}/csrf/
-%{__mv} *.php %{buildroot}/%{_datadir}/%{name}/
-%{__mv} cache/ %{buildroot}/%{_localstatedir}/lib/%{name}/
-%{__mv} cli/ %{buildroot}/%{_localstatedir}/lib/%{name}/
-%{__mv} resource/ %{buildroot}/%{_localstatedir}/lib/%{name}/
-%{__mv} rra/ %{buildroot}/%{_localstatedir}/lib/%{name}/
-%{__mv} scripts/ %{buildroot}/%{_localstatedir}/lib/%{name}/
-%{__install} -p -D -m 0644 %{SOURCE4} %{buildroot}/%{_sysconfdir}/cron.d/%{name}
-%{__install} -D -m 0644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/httpd/conf.d/%{name}.conf
+%{__install} -d -m 0755 %{buildroot}/%{_datadir}/%{name_org}/
+%{__install} -d -m 0755 cache/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/cache
+%{__install} -d -m 0755 cli/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/cli
+%{__install} -d -m 0775 log/ %{buildroot}/%{_localstatedir}/log/%{name_org}/
+%{__install} -d -m 0755 resource/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/resource
+%{__install} -d -m 0755 rra/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/rra/
+%{__install} -d -m 0755 scripts/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/scripts/
+%{__install} -d -m 0755 csrf/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/csrf/
+%{__mv} *.php %{buildroot}/%{_datadir}/%{name_org}/
+%{__mv} cache/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/
+%{__mv} cli/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/
+%{__mv} resource/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/
+%{__mv} rra/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/
+%{__mv} scripts/ %{buildroot}/%{_localstatedir}/lib/%{name_org}/
+%{__install} -p -D -m 0644 %{SOURCE3} %{buildroot}/%{_sysconfdir}/cron.d/%{name_org}
+%{__install} -D -m 0644 %{SOURCE1} %{buildroot}/%{_sysconfdir}/httpd/conf.d/%{name_org}.conf
 %{__install} -D -m 0644 %{SOURCE2} %{buildroot}/%{_sysconfdir}/logrotate.d/cacti
-%{__cp} -ar formats/ images/ include/ install/ lib/ locales/ mibs/ plugins/ %{buildroot}%{_datadir}/%{name}
-%{__mv} %{SOURCE3} %{buildroot}/%{_pkgdocdir}
+%{__cp} -ar formats/ images/ include/ install/ lib/ locales/ mibs/ plugins/ %{buildroot}%{_datadir}/%{name_org}
 %{__cp} -a docs/ %{buildroot}/%{_pkgdocdir}
-%{__mv} %{buildroot}/%{_datadir}/%{name}/include/config.php %{buildroot}/%{_sysconfdir}/%{name}/db.php
-%{__chmod} +x %{buildroot}/%{_datadir}/%{name}/cmd.php %{buildroot}/%{_datadir}/%{name}/poller.php
-ln -s %{_localstatedir}/lib/%{name}/cache %{buildroot}/%{_datadir}/%{name}/
-ln -s %{_localstatedir}/lib/%{name}/cli %{buildroot}/%{_datadir}/%{name}/
-ln -s %{_sysconfdir}/%{name}/db.php %{buildroot}/%{_datadir}/%{name}/include/config.php
-ln -s %{_localstatedir}/lib/%{name}/resource %{buildroot}/%{_datadir}/%{name}/
-ln -s %{_localstatedir}/lib/%{name}/rra %{buildroot}/%{_datadir}/%{name}/
-ln -s %{_localstatedir}/lib/%{name}/scripts %{buildroot}/%{_datadir}/%{name}/
-ln -s %{_localstatedir}/log/%{name}/ %{buildroot}/%{_datadir}/%{name}/log
-ln -s %{_datadir}/%{name}/lib %{buildroot}/%{_localstatedir}/lib/%{name}/
-ln -s %{_datadir}/%{name}/include %{buildroot}/%{_localstatedir}/lib/%{name}/
+%{__mv} %{buildroot}/%{_datadir}/%{name_org}/include/config.php %{buildroot}/%{_sysconfdir}/%{name_org}/db.php
+%{__chmod} +x %{buildroot}/%{_datadir}/%{name_org}/cmd.php %{buildroot}/%{_datadir}/%{name_org}/poller.php
+ln -s %{_localstatedir}/lib/%{name_org}/cache %{buildroot}/%{_datadir}/%{name_org}/
+ln -s %{_localstatedir}/lib/%{name_org}/cli %{buildroot}/%{_datadir}/%{name_org}/
+ln -s %{_sysconfdir}/%{name_org}/db.php %{buildroot}/%{_datadir}/%{name_org}/include/config.php
+ln -s %{_localstatedir}/lib/%{name_org}/resource %{buildroot}/%{_datadir}/%{name_org}/
+ln -s %{_localstatedir}/lib/%{name_org}/rra %{buildroot}/%{_datadir}/%{name_org}/
+ln -s %{_localstatedir}/lib/%{name_org}/scripts %{buildroot}/%{_datadir}/%{name_org}/
+ln -s %{_localstatedir}/log/%{name_org}/ %{buildroot}/%{_datadir}/%{name_org}/log
+ln -s %{_datadir}/%{name_org}/lib %{buildroot}/%{_localstatedir}/lib/%{name_org}/
+ln -s %{_datadir}/%{name_org}/include %{buildroot}/%{_localstatedir}/lib/%{name_org}/
 # Create logfiles
-touch %{buildroot}/%{_localstatedir}/log/%{name}/%{name}.log
-touch %{buildroot}/%{_localstatedir}/log/%{name}/%{name}_stderr.log
+touch %{buildroot}/%{_localstatedir}/log/%{name_org}/%{name_org}.log
+touch %{buildroot}/%{_localstatedir}/log/%{name_org}/%{name_org}_stderr.log
 # Create csrf-secret.php
-touch %{buildroot}/%{_localstatedir}/lib/%{name}/csrf/csrf-secret.php
+touch %{buildroot}/%{_localstatedir}/lib/%{name_org}/csrf/csrf-secret.php
 
 # Migrate /usr/share/cacti/resource to /var/cacti/resource
 %pretrans -p <lua>
@@ -133,84 +132,86 @@ end
 
 %post
 # Migrate file ownership to apache user
-chown -R apache:apache %{_localstatedir}/lib/%{name}/cache/
-chown -R apache:apache %{_localstatedir}/lib/%{name}/cli/
-chown -R apache:apache %{_localstatedir}/lib/%{name}/csrf/
-chown -R apache:apache %{_localstatedir}/lib/%{name}/resource/
-chown -R apache:apache %{_localstatedir}/lib/%{name}/rra/
-chown -R apache:apache %{_localstatedir}/lib/%{name}/scripts/
-chown -R apache:apache %{_localstatedir}/log/%{name}/
-chown root:apache %{_sysconfdir}/%{name}/db.php
+chown -R apache:apache %{_localstatedir}/lib/%{name_org}/cache/
+chown -R apache:apache %{_localstatedir}/lib/%{name_org}/cli/
+chown -R apache:apache %{_localstatedir}/lib/%{name_org}/csrf/
+chown -R apache:apache %{_localstatedir}/lib/%{name_org}/resource/
+chown -R apache:apache %{_localstatedir}/lib/%{name_org}/rra/
+chown -R apache:apache %{_localstatedir}/lib/%{name_org}/scripts/
+chown -R apache:apache %{_localstatedir}/log/%{name_org}/
+chown root:apache %{_sysconfdir}/%{name_org}/db.php
 
 # SELinux
-semanage fcontext -a -t httpd_sys_content_t '%{_sysconfdir}/%{name}/db.php' 2>/dev/null || :
-semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/cache(/.*)?' 2>/dev/null || :
-semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/cli(/.*)?' 2>/dev/null || :
-semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/csrf(/.*)?' 2>/dev/null || :
-semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/resource(/.*)?' 2>/dev/null || :
-semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/scripts(/.*)?' 2>/dev/null || :
-restorecon -R %{_localstatedir}/lib/%{name} || :
-restorecon -R %{_sysconfdir}/%{name} || :
+semanage fcontext -a -t httpd_sys_content_t '%{_sysconfdir}/%{name_org}/db.php' 2>/dev/null || :
+semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/cache(/.*)?' 2>/dev/null || :
+semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/cli(/.*)?' 2>/dev/null || :
+semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/csrf(/.*)?' 2>/dev/null || :
+semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/resource(/.*)?' 2>/dev/null || :
+semanage fcontext -a -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/scripts(/.*)?' 2>/dev/null || :
+restorecon -R %{_localstatedir}/lib/%{name_org} || :
+restorecon -R %{_sysconfdir}/%{name_org} || :
 
 # Migrate cacti polller to apache user
 
-sed -i -e 's/\tcacti\t/\tapache\t/' %{_sysconfdir}/cron.d/%{name}
+sed -i -e 's/\tcacti\t/\tapache\t/' %{_sysconfdir}/cron.d/%{name_org}
 
 %postun
 if [ $1 -eq 0  ] ; then
-semanage fcontext -d -t httpd_sys_content_t '%{_sysconfdir}/%{name}/db.php' 2>/dev/null || :
-semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/cache(/.*)?' 2>/dev/null || :
-semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/cli(/.*)?' 2>/dev/null || :
-semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/csrf(/.*)?' 2>/dev/null || :
-semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/resource(/.*)?' 2>/dev/null || :
-semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name}/scripts(/.*)?' 2>/dev/null || :
+semanage fcontext -d -t httpd_sys_content_t '%{_sysconfdir}/%{name_org}/db.php' 2>/dev/null || :
+semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/cache(/.*)?' 2>/dev/null || :
+semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/cli(/.*)?' 2>/dev/null || :
+semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/csrf(/.*)?' 2>/dev/null || :
+semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/resource(/.*)?' 2>/dev/null || :
+semanage fcontext -d -t httpd_sys_rw_content_t '%{_localstatedir}/lib/%{name_org}/scripts(/.*)?' 2>/dev/null || :
 fi
 
 %files
 %doc docs/ README.md cacti.sql
 %license LICENSE
-%dir %{_sysconfdir}/%{name}
-%dir %{_datadir}/%{name}
-%dir %{_localstatedir}/lib/%{name}
-%dir %{_localstatedir}/lib/%{name}/cli
-%dir %attr(-,apache,apache) %{_localstatedir}/lib/%{name}/csrf
-%dir %attr(-,apache,apache) %{_localstatedir}/lib/%{name}/scripts
-%dir %attr(-,apache,apache) %{_localstatedir}/log/%{name}/
-%config(noreplace) %attr(-,apache,apache) %{_localstatedir}/log/%{name}/%{name}.log
-%config(noreplace) %attr(-,apache,apache) %{_localstatedir}/log/%{name}/%{name}_stderr.log
+%dir %{_sysconfdir}/%{name_org}
+%dir %{_datadir}/%{name_org}
+%dir %{_localstatedir}/lib/%{name_org}
+%dir %{_localstatedir}/lib/%{name_org}/cli
+%dir %attr(-,apache,apache) %{_localstatedir}/lib/%{name_org}/csrf
+%dir %attr(-,apache,apache) %{_localstatedir}/lib/%{name_org}/scripts
+%dir %attr(-,apache,apache) %{_localstatedir}/log/%{name_org}/
+%config(noreplace) %attr(-,apache,apache) %{_localstatedir}/log/%{name_org}/%{name_org}.log
+%config(noreplace) %attr(-,apache,apache) %{_localstatedir}/log/%{name_org}/%{name_org}_stderr.log
 %config(noreplace) %{_sysconfdir}/cron.d/cacti
-%config(noreplace) %{_sysconfdir}/httpd/conf.d/%{name}.conf
-%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
-%attr(0640,root,apache) %config(noreplace) %{_sysconfdir}/%{name}/db.php
-%{_datadir}/%{name}/*.php
-%{_datadir}/%{name}/cache
-%{_datadir}/%{name}/cli
-%{_datadir}/%{name}/formats/
-%{_datadir}/%{name}/images/
-%{_datadir}/%{name}/include/
-%{_datadir}/%{name}/install/
-%{_datadir}/%{name}/lib/
-%{_datadir}/%{name}/locales/*
-%{_datadir}/%{name}/log
-%{_datadir}/%{name}/mibs
-%{_datadir}/%{name}/plugins/
-%{_datadir}/%{name}/resource
-%{_datadir}/%{name}/rra
-%{_datadir}/%{name}/scripts
-%{_localstatedir}/lib/%{name}/scripts/*[^p]
-%{_pkgdocdir}/cacti.README.fedora
-%attr(-,apache,apache) %{_localstatedir}/lib/%{name}/scripts/*.php
-%attr(-,apache,apache) %{_localstatedir}/lib/%{name}/resource/
-%attr(-,apache,apache) %{_localstatedir}/lib/%{name}/rra/
-%attr(-,apache,apache) %{_localstatedir}/lib/%{name}/cache/
-%attr(-,apache,apache) %{_localstatedir}/lib/%{name}/cli/*php
-%attr(-,apache,apache) %{_localstatedir}/lib/%{name}/cli/.htaccess
-%attr(0770,apache,apache) %{_localstatedir}/lib/%{name}/csrf/csrf-secret.php
-%attr(-,root,root) %{_localstatedir}/lib/%{name}/include
-%attr(-,root,root) %{_localstatedir}/lib/%{name}/lib
-%ghost %{_datadir}/%{name}/resource.rpmmoved
+%config(noreplace) %{_sysconfdir}/httpd/conf.d/%{name_org}.conf
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name_org}
+%attr(0640,root,apache) %config(noreplace) %{_sysconfdir}/%{name_org}/db.php
+%{_datadir}/%{name_org}/*.php
+%{_datadir}/%{name_org}/cache
+%{_datadir}/%{name_org}/cli
+%{_datadir}/%{name_org}/formats/
+%{_datadir}/%{name_org}/images/
+%{_datadir}/%{name_org}/include/
+%{_datadir}/%{name_org}/install/
+%{_datadir}/%{name_org}/lib/
+%{_datadir}/%{name_org}/locales/*
+%{_datadir}/%{name_org}/log
+%{_datadir}/%{name_org}/mibs
+%{_datadir}/%{name_org}/plugins/
+%{_datadir}/%{name_org}/resource
+%{_datadir}/%{name_org}/rra
+%{_datadir}/%{name_org}/scripts
+%{_localstatedir}/lib/%{name_org}/scripts/*[^p]
+%attr(-,apache,apache) %{_localstatedir}/lib/%{name_org}/scripts/*.php
+%attr(-,apache,apache) %{_localstatedir}/lib/%{name_org}/resource/
+%attr(-,apache,apache) %{_localstatedir}/lib/%{name_org}/rra/
+%attr(-,apache,apache) %{_localstatedir}/lib/%{name_org}/cache/
+%attr(-,apache,apache) %{_localstatedir}/lib/%{name_org}/cli/*php
+%attr(-,apache,apache) %{_localstatedir}/lib/%{name_org}/cli/.htaccess
+%attr(0770,apache,apache) %{_localstatedir}/lib/%{name_org}/csrf/csrf-secret.php
+%attr(-,root,root) %{_localstatedir}/lib/%{name_org}/include
+%attr(-,root,root) %{_localstatedir}/lib/%{name_org}/lib
+%ghost %{_datadir}/%{name_org}/resource.rpmmoved
 
 %changelog
+* Wed Oct 27 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.18-1
+- Update to 1.2.18
+
 * Tue Nov 03 2020 Morten Stevens <mstevens@fedoraproject.org> - 1.2.15-1
 - Update to 1.2.15
 
