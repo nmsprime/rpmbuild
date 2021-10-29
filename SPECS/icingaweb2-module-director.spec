@@ -17,7 +17,7 @@ Source7: https://raw.githubusercontent.com/hrix/nagios-plugin-ip_conntrack/maste
 Source8: https://gitlab.com/argaar/nagios-plugins/raw/master/check%20symmetra%20apc/check_apc.pl
 Source9: https://raw.githubusercontent.com/melmorabity/nagios-plugin-systemd-service/master/check_systemd_service.sh
 
-Requires: bc dhcpd-pools icinga2 icinga2-ido-mysql icingacli icingaweb2 icingaweb2-module-incubator nagios-plugins-all
+Requires: bc dhcpd-pools icinga2 icinga2-ido-pgsql icingacli icingaweb2 icingaweb2-module-incubator nagios-plugins-all
 Requires: nmsprime-hfcreq nmsprime-provmon perl-Nagios-Plugin perl-Net-SNMP
 Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl rh-php73-php-process
 
