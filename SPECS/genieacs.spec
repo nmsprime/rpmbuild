@@ -1,12 +1,11 @@
 Name: genieacs
-Version: 1.2.3
-Release: 2
+Version: 1.2.8
+Release: 1
 Summary: A fast and lightweight TR-069 Auto Configuration Server (ACS)
 
 Group: Applications/Communications
 License: AGPLv3
 URL: https://%{name}.com/
-Source: https://github.com/%{name}/%{name}/archive/%{name}-%{version}.tar.gz
 
 BuildRequires: rh-nodejs12-npm
 Requires: mongodb-org-server, rh-nodejs12
@@ -15,17 +14,7 @@ Requires: mongodb-org-server, rh-nodejs12
 GenieACS is an open source TR-069 remote management solution with advanced
 device provisioning capabilities.
 
-%prep
-%setup
-
 %build
-source /opt/rh/rh-nodejs12/enable
-#sed -i 's/sessionContext\.provisions\.length/false/' lib/cwmp.ts
-cache=$(mktemp -d)
-npm install --cache "${cache}"
-npm run build --cache "${cache}"
-rm -rf "${cache}"
-
 for service in cwmp fs nbi ui; do
 cat << EOF > %{name}-${service}.service
 [Unit]
@@ -35,7 +24,7 @@ After=network.target
 [Service]
 User=nobody
 EnvironmentFile=%{_sysconfdir}/%{name}/%{name}.env
-ExecStart=/usr/bin/scl enable rh-nodejs12 '/lib/node_modules/genieacs/bin/%{name}-${service}'
+ExecStart=/usr/bin/scl enable rh-nodejs12 '/bin/%{name}-${service}'
 Restart=always
 
 [Install]
@@ -67,9 +56,11 @@ cat << EOF >> %{name}.log
 EOF
 
 %install
-install -d %{buildroot}/lib/node_modules
-mv dist %{buildroot}/lib/node_modules/%{name}
-mv node_modules %{buildroot}/lib/node_modules/%{name}
+source /opt/rh/rh-nodejs12/enable
+cache=$(mktemp -d)
+npm install %{name}@%{version} -g --cache "${cache}" --prefix %{buildroot}
+rm -rf "${cache}"
+find %{buildroot} -name *.json -exec sed -i "s|%{buildroot}||g" {} +
 
 for service in cwmp fs nbi ui; do
   install -D -m 644 %{name}-${service}.service %{buildroot}%{_unitdir}/%{name}-${service}.service
@@ -86,14 +77,17 @@ install -d %{buildroot}%{_localstatedir}/log/%{name}
 install -d %{buildroot}%{_datadir}/%{name}/ext
 
 %files
+/bin/*
 %config(noreplace) %attr(600, nobody, nobody) %{_sysconfdir}/%{name}/%{name}.env
-%{_sysconfdir}/logrotate.d/%{name}
-/lib/node_modules/%{name}/*
+%config(noreplace) %attr(644, root, root) %{_sysconfdir}/logrotate.d/%{name}
+/lib/*
 %{_unitdir}/*.service
 %attr(755, nobody, nobody) %{_datadir}/%{name}/ext
 %attr(755, nobody, nobody) %{_localstatedir}/log/%{name}
 
 %changelog
+* Mon Nov 08 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.8-1
+- Update to 1.2.8-1
 * Sun Dec 13 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.3-2
 - Use master to workaround factory reset loop
 * Tue Dec 08 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.3-1
