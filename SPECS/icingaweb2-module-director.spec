@@ -19,7 +19,7 @@ Source9: https://raw.githubusercontent.com/melmorabity/nagios-plugin-systemd-ser
 
 Requires: bc dhcpd-pools icinga2 icinga2-ido-mysql icingacli icingaweb2 icingaweb2-module-incubator nagios-plugins-all
 Requires: nmsprime-hfcreq nmsprime-provmon perl-Nagios-Plugin perl-Net-SNMP
-Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl icingaweb2-module-incubator
+Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl
 
 %description
 Icinga Director has been designed to make Icinga 2 configuration handling easy.
