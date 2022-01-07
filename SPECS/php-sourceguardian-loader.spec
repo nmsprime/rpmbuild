@@ -1,6 +1,6 @@
 Name: php-sourceguardian-loader
-Version: 12.1.3
-Release: 1
+Version: 12.1.1
+Release: 2
 Summary: The SourceGuardian Loader
 Conflicts: php-ioncube-loader
 Obsoletes: php-ioncube-loader <= 10.4.5
@@ -37,8 +37,8 @@ systemctl restart php80-php-fpm.service
 /opt/remi/php80/root/usr/lib64/php/modules/ixed.8.0.lin
 
 %changelog
-* Thu Jan 06 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 12.1.3-1
+* Thu Jan 06 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 12.1.1-2
 - Fix: Restart PHP8 after changing ini
 
-* Wed Dec 01 2021 Ole Ernst <ole.ernst@nmsprime.com> - 12.1.2-1
+* Wed Dec 01 2021 Ole Ernst <ole.ernst@nmsprime.com> - 12.1.1-1
 - Initial RPM release
