@@ -67,7 +67,7 @@ director_name=$(grep 'dbname' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" 
 director_user=$(grep 'username' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 director_pw=$(grep 'password' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 mysql "$director_name" -u "$director_user" --password="$director_pw" << "EOF"
-UPDATE import_source_setting set setting_value = 'SELECT CONCAT(a.id, \'_\', a.name) AS id, a.name, IF(a.parent_id < 3 OR a.parent_id = a.id, \'\', b.id) AS parent, IF(a.community_ro <> \'\', a.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community, IF(a.ip <> \'\',  SUBSTRING_INDEX(a.ip, \':\', 1), \'127.0.0.1\') AS ip, IF(INSTR(a.ip, \':\') > 0, SUBSTRING_INDEX(a.ip, \':\', -1), NULL) AS port, getTopParentNetelementType(a.netelementtype_id) as netelementtype_id, t.vendor, IF(a.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL), 1, 0) AS isbubble FROM netelement AS a JOIN netelement AS b ON b.id = a.parent_id JOIN netelementtype AS t ON a.netelementtype_id = t.id WHERE a.netelementtype_id >= 2 AND a.deleted_at IS NULL;' where source_id = 1 and setting_name = 'query';
+UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, '_', NE.name) AS id, NE.name, NE.parent_id AS parent, IF(NE.community_ro <> '', NE.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community, IF(NE.ip <> '', SUBSTRING_INDEX(NE.ip, ':', 1), '127.0.0.1') AS ip, IF(INSTR(NE.ip, ':') > 0, SUBSTRING_INDEX(NE.ip, ':', -1), NULL) AS port, IF(NT.base_type_id = 2, 1, NT.base_type_id) as netelementtype_id, NT.vendor, IF(NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL), 1, 0) AS isbubbleFROM netelement AS NE JOIN netelement AS NP ON NP.id = NE.parent_id JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id WHERE NE.netelementtype_id >= 2 AND NE.deleted_at IS NULL;' where source_id = 1 and setting_name = 'query';
 REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
 EOF
 
@@ -82,26 +82,6 @@ mysql --batch "$nmsprime_name" -u "$nmsprime_user" --password="$nmsprime_pw" -e 
   fi
   icingacli director hostgroup create "$id" --json "{\"display_name\":\"$name\"}"
 done
-mysql "$nmsprime_name" -u "$nmsprime_user" --password="$nmsprime_pw" << EOF
-DROP FUNCTION IF EXISTS getTopParentNetelementType;
-DELIMITER $$
-CREATE FUNCTION getTopParentNetelementType(start_id INT) RETURNS INT DETERMINISTIC
-BEGIN
-  DECLARE x INT;
-  DECLARE y INT;
-  SET x = start_id;
-  sloop:LOOP
-    SELECT parent_id INTO y FROM netelementtype WHERE id = x;
-    IF y IS NULL OR y = 0 THEN
-      LEAVE sloop;
-    END IF;
-    SET x = y;
-    ITERATE sloop;
-  END LOOP;
-  RETURN x;
-END $$
-DELIMITER ;
-EOF
 
 grep -q 'http_port' /etc/icinga2/conf.d/hosts.conf || sed -i 's|http_ssl = "true"|http_ssl = "true"\n    http_port = "8080"|' /etc/icinga2/conf.d/hosts.conf
 grep -q 'vars.procs_warning' /etc/icinga2/conf.d/hosts.conf || sed -i '/import "generic-host"/a\ \ vars.procs_warning = "300"' /etc/icinga2/conf.d/hosts.conf
@@ -175,28 +155,10 @@ echo "127.0.0.1 $(hostname)" >> /etc/hosts
 systemctl restart icinga2
 sleep 5
 icingacli director kickstart run
-mysql nmsprime -u nmsprime --password="$mysql_nmsprime_psw" << EOF
-DELIMITER $$
-CREATE FUNCTION getTopParentNetelementType(start_id INT) RETURNS INT DETERMINISTIC
-BEGIN
-  DECLARE x INT;
-  DECLARE y INT;
-  SET x = start_id;
-  sloop:LOOP
-    SELECT parent_id INTO y FROM netelementtype WHERE id = x;
-    IF y IS NULL OR y = 0 THEN
-      LEAVE sloop;
-    END IF;
-    SET x = y;
-    ITERATE sloop;
-  END LOOP;
-  RETURN x;
-END $$
-DELIMITER ;
-EOF
+
 mysql director -u directoruser --password="$mysql_director_psw" << "EOF"
 REPLACE INTO import_source VALUES (1,'nmsprime.netelement','id','Icinga\\Module\\Director\\Import\\ImportSourceSql','unknown',NULL,NULL,NULL);
-REPLACE INTO import_source_setting VALUES (1,'query','SELECT CONCAT(a.id, \'_\', a.name) AS id, a.name, IF(a.parent_id < 3 OR a.parent_id = a.id, \'\', b.id) AS parent, IF(a.community_ro <> \'\', a.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community, IF(a.ip <> \'\',  SUBSTRING_INDEX(a.ip, \':\', 1), \'127.0.0.1\') AS ip, IF(INSTR(a.ip, \':\') > 0, SUBSTRING_INDEX(a.ip, \':\', -1), NULL) AS port, getTopParentNetelementType(a.netelementtype_id) as netelementtype_id, t.vendor, IF(a.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL), 1, 0) AS isbubble FROM netelement AS a JOIN netelement AS b ON b.id = a.parent_id JOIN netelementtype AS t ON a.netelementtype_id = t.id WHERE a.netelementtype_id >= 2 AND a.deleted_at IS NULL;'),(1,'resource','nmsprime');
+REPLACE INTO import_source_setting VALUES (1,'query','SELECT CONCAT(NE.id, '_', NE.name) AS id, NE.name, NE.parent_id AS parent, IF(NE.community_ro <> '', NE.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community, IF(NE.ip <> '', SUBSTRING_INDEX(NE.ip, ':', 1), '127.0.0.1') AS ip, IF(INSTR(NE.ip, ':') > 0, SUBSTRING_INDEX(NE.ip, ':', -1), NULL) AS port, IF(NT.base_type_id = 2, 1, NT.base_type_id) as netelementtype_id, NT.vendor, IF(NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL), 1, 0) AS isbubbleFROM netelement AS NE JOIN netelement AS NP ON NP.id = NE.parent_id JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id WHERE NE.netelementtype_id >= 2 AND NE.deleted_at IS NULL;'),(1,'resource','nmsprime');
 INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
 REPLACE INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,'unknown',NULL,NULL,NULL);
 REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
