@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.8.1
-Release: 2
+Release: 4
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -19,7 +19,7 @@ Source9: https://raw.githubusercontent.com/melmorabity/nagios-plugin-systemd-ser
 
 Requires: bc dhcpd-pools icinga2 icinga2-ido-mysql icingacli icingaweb2 icingaweb2-module-incubator nagios-plugins-all
 Requires: nmsprime-hfcreq nmsprime-provmon perl-Nagios-Plugin perl-Net-SNMP
-Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl
+Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl rh-php73-php-process
 
 %description
 Icinga Director has been designed to make Icinga 2 configuration handling easy.
@@ -189,6 +189,12 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Thu Jan 13 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 1.8.1-4
+- fix: Add dependency rh-php-73-process for director
+
+* Wed Jan 10 2022 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-3
+- Remove getTopNetelementType DB function and use base_type_id column instead
+
 * Wed Oct 27 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.8.1-2
 - update to version 1.8.1
 
