@@ -53,8 +53,6 @@ install -d %{buildroot}%{_libdir}/nagios
 mv plugins %{buildroot}%{_libdir}/nagios
 cp %{_sourcedir}/check_{{mem,ip_conntrack,apc}.pl,systemd_service.sh} %{buildroot}%{_libdir}/nagios/plugins
 mv check_{tftp.py,updates,snmp_env.pl} %{buildroot}%{_libdir}/nagios/plugins
-install -d %{buildroot}%{_sysconfdir}/cron.d
-mv icingaweb2-module-director %{buildroot}%{_sysconfdir}/cron.d
 install -d %{buildroot}%{_sysconfdir}/sudoers.d
 mv nmsprime-icinga %{buildroot}%{_sysconfdir}/sudoers.d
 install -d %{buildroot}%{_bindir}
@@ -163,8 +161,8 @@ REPLACE INTO import_source_setting VALUES (1,'query', "SELECT CONCAT(NE.id, '_',
 INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
 REPLACE INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,'unknown',NULL,NULL,NULL);
 REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
-REPLACE INTO `director_job` VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL);
-REPLACE INTO `director_job_setting` VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1');
+REPLACE INTO `director_job` VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL),(3,'deploy','Icinga\\Module\\Director\\Job\\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
+REPLACE INTO `director_job_setting` VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
 EOF
 mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "SELECT id, name FROM netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) AND id < 1000;" | tail -n +2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
@@ -176,7 +174,6 @@ done
 
 %files
 %{_unitdir}/*.service
-%{_sysconfdir}/cron.d/*
 %{_datarootdir}/icingaweb2/modules/director/*
 %attr(0755, -, -) %{_libdir}/nagios/plugins/*
 %config(noreplace) %attr(0640, icinga, icinga) %{_sysconfdir}/icinga2/conf.d/*
@@ -190,6 +187,10 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Fri Jan 14 2022 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-5
+- remove cron/job file and use icinga systemd service
+- Add deployment Job to keep nmsprime and icinga in sync
+
 * Thu Jan 13 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 1.8.1-4
 - fix: Add dependency rh-php-73-process for director
 
