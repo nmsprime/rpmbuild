@@ -128,6 +128,7 @@ systemctl enable icinga-director
 systemctl start icinga-director
 icinga2 feature enable ido-mysql
 icinga2 feature enable command
+rm -f /var/cache/icinga2/icinga2.{debug,vars}
 icinga2 api setup
 
 mysqladmin -u root --password="$mysql_root_psw" create icingaweb2
