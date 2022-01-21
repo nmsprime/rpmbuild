@@ -19,7 +19,7 @@ Source9: https://raw.githubusercontent.com/melmorabity/nagios-plugin-systemd-ser
 
 Requires: bc dhcpd-pools icinga2 icinga2-ido-pgsql icingacli icingaweb2 icingaweb2-module-incubator nagios-plugins-all
 Requires: nmsprime-hfcreq nmsprime-provmon perl-Nagios-Plugin perl-Net-SNMP
-Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl rh-php73-php-process
+Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl rh-php73-php-process pgloader
 
 %description
 Icinga Director has been designed to make Icinga 2 configuration handling easy.
@@ -59,11 +59,113 @@ install -d %{buildroot}%{_bindir}
 mv sas2ircu %{buildroot}%{_bindir}
 
 %post
+
+######### UPDATE #########
+
 if [ $1 -ne 1 ]; then
-director_sec=$(awk '/\[director\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
-mysql_director_name=$(grep 'dbname' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-mysql_director_user=$(grep 'username' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-mysql_director_psw=$(grep 'password' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+
+# If postgres DB is not yet there - move Data from mysql to postgres
+# TODO: Remove all the DB conversion stuff in next version
+sudo -Hiu postgres psql -lqt | cut -d '|' -f 1 | grep -w icinga2
+
+if [ $? -eq 1 ]; then
+
+sed -i 's/^db = \"mysql\"/db = \"pgsql\"/' /etc/icingaweb2/resources.ini
+sed -i 's/^port =.*/port = 5432/' /etc/icingaweb2/resources.ini
+sed -i 's/^charset = \".*\"/charset = \"utf8\"/' /etc/icingaweb2/resources.ini
+
+systemctl stop icinga2 icinga-director
+
+# Prepare DB conversion statements for pgloader
+echo "LOAD DATABASE
+  FROM mysql://psqlconverter@localhost/<db>
+  INTO postgresql:///<db>
+  WITH data only, batch rows = 5000, prefetch rows = 5000
+  CAST
+    type tinyint to smallint
+  BEFORE LOAD DO \$\$ ALTER SCHEMA public RENAME TO <db>; \$\$
+  AFTER LOAD DO \$\$ DROP SCHEMA IF EXISTS public; \$\$,
+    \$\$ ALTER SCHEMA <db> RENAME TO public; \$\$;" > /tmp/db.load
+
+# Create DBs and user
+for db in icinga2 icingaweb2 director; do
+  cmdFile="/tmp/$db.load";
+  sed "s/<db>/$db/" /tmp/db.load > $cmdFile
+  echo "INFO: Create postgres database '$db'"
+  sudo -u postgres createdb $db
+
+  psw=$(awk "/\[$db\]/{flag=1;next}/\[/{flag=0}flag" /etc/icingaweb2/resources.ini | grep "^password" | sort | cut -d '=' -f2 | xargs)
+  user=${db}user
+  sudo -Hiu postgres psql -c "CREATE USER $user PASSWORD '$psw'"
+  echo $user
+done
+
+# Create DB Schema
+sudo -Hiu postgres psql icinga2 < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql
+sudo -Hiu postgres psql icinga2 << EOF
+  ALTER TABLE icinga_objects ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
+  ALTER TABLE icinga_hoststatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
+  ALTER TABLE icinga_servicestatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
+EOF
+
+sudo -Hiu postgres psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
+sudo -Hiu postgres psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
+icingacli director migration run
+
+read -r -a credentials <<< $(grep '^ROOT_DB_USERNAME\|^ROOT_DB_PASSWORD=' /etc/nmsprime/env/root.env | cut -d '=' -f2)
+mysql -u "${credentials[0]}" -p"${credentials[1]}" --exec='Create user psqlconverter; GRANT select ON *.* TO psqlconverter;'
+
+# Convert DBs (copy data) and Set user permissions
+for db in icinga2 icingaweb2 director; do
+  cmdFile="/tmp/$db.load";
+  sudo -u postgres pgloader -q $cmdFile
+
+  user=${db}user
+  sudo -Hiu postgres psql $db -c "
+    ALTER ROLE $user set search_path to 'public';
+    ALTER ROLE postgres set search_path to 'public';
+    GRANT USAGE ON SCHEMA public TO $user;
+    GRANT ALL PRIVILEGES ON ALL Tables in schema public TO $user;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $user;"
+done
+
+sudo -Hiu postgres psql director << "EOF"
+  UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, ''_'', NE.name) AS id,
+  NE.name, NE.parent_id AS parent,
+  CASE WHEN NE.community_ro <> '''' THEN NE.community_ro ELSE (SELECT ro_community FROM nmsprime.provbase WHERE deleted_at IS NULL) END AS ro_community,
+  CASE WHEN NE.ip <> '''' THEN SPLIT_PART(NE.ip, '':'', 1) ELSE ''127.0.0.1'' END AS ip,
+  CASE WHEN POSITION(NE.ip IN '':'') > 0 THEN SPLIT_PART(NE.ip, '':'', -1) ELSE NULL END AS port,
+  CASE WHEN NT.base_type_id = 2 THEN 1 ELSE NT.base_type_id END AS netelementtype_id, NT.vendor,
+  CASE WHEN NE.id IN (SELECT DISTINCT netelement_id FROM nmsprime.modem WHERE modem.deleted_at IS NULL) THEN 1 ELSE 0 END AS isbubble
+FROM nmsprime.netelement AS NE JOIN nmsprime.netelement AS NP ON NP.id = NE.parent_id
+  JOIN nmsprime.netelementtype AS NT ON NE.netelementtype_id = NT.id
+WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'
+  WHERE source_id = 1 and setting_name = 'query';
+
+  INSERT INTO sync_property (id, rule_id, source_id, source_expression, destination_field, priority, filter_expression, merge_policy) VALUES
+    (1,1,1,'generic-host-director','import',1,NULL,'override'),
+    (2,1,1,'${ip}','address',2,NULL,'override'),
+    (3,1,1,'${name}','display_name',3,NULL,'override'),
+    (4,1,1,'${parent}','vars.parents',4,NULL,'override'),
+    (5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),
+    (6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),
+    (7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),
+    (8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),
+    (9,1,1,'${port}','vars.port',9,NULL,'override'),
+    (10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override')
+  ON CONFLICT (id) DO UPDATE SET
+    id = excluded.id,
+    rule_id = excluded.rule_id,
+    source_id = excluded.source_id,
+    source_expression = excluded.source_expression,
+    destination_field = excluded.destination_field,
+    priority = excluded.priority,
+    filter_expression = excluded.filter_expression,
+    merge_policy = excluded.merge_policy;
+EOF
+
+fi
+# end of DB switch
 
 if icingacli director migration pending ; then
   echo "Running Icinga Migrations"
@@ -71,25 +173,6 @@ if icingacli director migration pending ; then
 else
   echo "No Migration Necessary"
 fi
-
-mysql "$mysql_director_name" -u "$mysql_director_user" --password="$mysql_director_psw" << "EOF"
-  UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, \'_\', NE.name) AS id,
-  NE.name, NE.parent_id AS parent,
-  IF(NE.community_ro <> \'\', NE.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community,
-  IF(NE.ip <> \'\', SUBSTRING_INDEX(NE.ip, \':\', 1), \'127.0.0.1\') AS ip,
-  IF(INSTR(NE.ip, \':\') > 0, SUBSTRING_INDEX(NE.ip, \':\', -1), NULL) AS port,
-  IF(NT.base_type_id = 2, 1, NT.base_type_id) as netelementtype_id,
-  NT.vendor,
-  IF(NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE modem.deleted_at IS NULL), 1, 0) AS isbubble
-FROM netelement AS NE
-JOIN netelement AS NP ON NP.id = NE.parent_id
-JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
-WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'
-WHERE source_id = 1 and setting_name = 'query';
-REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
-REPLACE INTO `director_job` VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL),(3,'deploy','Icinga\\Module\\Director\\Job\\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
-REPLACE INTO `director_job_setting` VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
-EOF
 
 nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
 mysql_nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
@@ -110,60 +193,77 @@ grep -q 'vars.procs_warning' /etc/icinga2/conf.d/hosts.conf || sed -i '/import "
 
 systemctl daemon-reload
 systemctl restart icinga2
+# TODO: Remove?
 systemctl enable icinga-director
 systemctl restart icinga-director
 exit 0
 fi
 # end of update
 
-mysql_root_psw=$(grep ROOT_DB_PASSWORD /etc/nmsprime/env/root.env | cut -d'=' -f2)
-mysql_nmsprime_psw=$(grep DB_PASSWORD /etc/nmsprime/env/global.env | cut -d'=' -f2)
-mysql_icinga2_psw=$(pwgen 12 1)
-mysql_icingaweb2_psw=$(pwgen 12 1)
-mysql_director_psw=$(pwgen 12 1)
+######### INSTALL #########
+
+sql_root_psw=$(grep ROOT_DB_PASSWORD /etc/nmsprime/env/root.env | cut -d'=' -f2)
+sql_nmsprime_psw=$(grep DB_PASSWORD /etc/nmsprime/env/global.env | cut -d'=' -f2)
+sql_icinga2_psw=$(pwgen 12 1)
+sql_icingaweb2_psw=$(pwgen 12 1)
+sql_director_psw=$(pwgen 12 1)
 icingaweb2_psw='admin'
 cmdtransport_api_psw=$(pwgen 12 1)
 director_api_psw=$(pwgen 12 1)
 phone_api_psw=$(pwgen 12 1)
+
 sed -i 's|http_uri = "/"|http_uri = "/nmsprime"\n    http_ssl = "true"\n    http_port = "8080"|' /etc/icinga2/conf.d/hosts.conf
 sed -i '/import "generic-host"/a\ \ vars.procs_warning = "300"' /etc/icinga2/conf.d/hosts.conf
-mysqladmin -u root --password="$mysql_root_psw" create icinga2
-echo "GRANT ALL ON icinga2.* TO 'icinga2user'@'localhost' IDENTIFIED BY '$mysql_icinga2_psw';" | mysql -u root --password="$mysql_root_psw"
-mysql icinga2 -u icinga2user --password="$mysql_icinga2_psw" < /usr/share/icinga2-ido-mysql/schema/mysql.sql
-mysql icinga2 -u icinga2user --password="$mysql_icinga2_psw" << EOF
-ALTER TABLE icinga_objects ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
-ALTER TABLE icinga_hoststatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
-ALTER TABLE icinga_servicestatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
+
+sudo -u postgres createdb icinga2
+sudo -Hiu postgres psql -c "CREATE USER icinga2user PASSWORD '$sql_icinga2_psw'; GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icinga2user";
+sudo -Hiu postgres psql icinga2 < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql
+sudo -Hiu postgres psql icinga2 << EOF
+  ALTER TABLE icinga_objects ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
+  ALTER TABLE icinga_hoststatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
+  ALTER TABLE icinga_servicestatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
 EOF
+
 sed -i -e 's|//user =.*|user = "icinga2user"|' \
-  -e "s|//password =.*|password = \"$mysql_icinga2_psw\"|" \
+  -e "s|//password =.*|password = \"$sql_icinga2_psw\"|" \
   -e 's|//host|host|' \
-  -e 's|//database =.*|database = "icinga2"|' /etc/icinga2/features-available/ido-mysql.conf
-chown icinga:icinga /etc/icinga2/features-available/ido-mysql.conf
-sed -i "s/vars.mysql_password = \"<mysql_icinga2_psw>\"/vars.mysql_password = \"$mysql_icinga2_psw\"/" /etc/icinga2/conf.d/nmsprime-services.conf
-sed -i "s/^ICINGA2_DB_PASSWORD=$/ICINGA2_DB_PASSWORD=$mysql_icinga2_psw/" /etc/nmsprime/env/provmon.env
+  -e 's|//database =.*|database = "icinga2"|' /etc/icinga2/features-available/ido-pgsql.conf
+chown icinga:icinga /etc/icinga2/features-available/ido-pgsql.conf
+
+sed -i "s/vars.mysql_password = \"<mysql_icinga2_psw>\"/vars.mysql_password = \"$sql_icinga2_psw\"/" /etc/icinga2/conf.d/nmsprime-services.conf
+sed -i "s/vars.sql_password = \"<pgsql_icinga2_psw>\"/vars.sql_password = \"$sql_icinga2_psw\"/" /etc/icinga2/conf.d/nmsprime-services.conf
+
 systemctl enable icinga2
 systemctl start icinga2
 systemctl enable php80-php-fpm
 systemctl start php80-php-fpm
 systemctl enable icinga-director
 systemctl start icinga-director
-icinga2 feature enable ido-mysql
+icinga2 feature enable ido-pgsql
 icinga2 feature enable command
 rm -f /var/cache/icinga2/icinga2.{debug,vars}
 icinga2 api setup
 
-mysqladmin -u root --password="$mysql_root_psw" create icingaweb2
-echo "GRANT ALL ON icingaweb2.* TO 'icingaweb2user'@'localhost' IDENTIFIED BY '$mysql_icingaweb2_psw';" | mysql -u root --password="$mysql_root_psw"
-mysql icingaweb2 -u icingaweb2user --password="$mysql_icingaweb2_psw" < /usr/share/doc/icingaweb2/schema/mysql.schema.sql
-echo "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');" | mysql icingaweb2 -u icingaweb2user --password="$mysql_icingaweb2_psw"
-sed -i -e "s/^password = \"<mysql_icinga2_psw>\"$/password = \"$mysql_icinga2_psw\"/" \
-  -e "s/^password = \"<mysql_icingaweb2_psw>\"$/password = \"$mysql_icingaweb2_psw\"/" \
-  -e "s/^password = \"<mysql_nmsprime_psw>\"$/password = \"$mysql_nmsprime_psw\"/" \
-  -e "s/^password = \"<mysql_director_psw>\"$/password = \"$mysql_director_psw\"/;" /etc/icingaweb2/resources.ini
+# Icingaweb2
+sudo -u postgres createdb icingaweb2
+sudo -Hiu postgres psql -c "CREATE USER icingaweb2user PASSWORD '$sql_icingaweb2_psw';
+  GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icingaweb2user;
+  GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO icingaweb2user;"
+sudo -Hiu postgres psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
+sudo -Hiu postgres psql icingaweb2 -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');"
+
+sed -i -e "s/^password = \"<sql_icinga2_psw>\"$/password = \"$sql_icinga2_psw\"/" \
+  -e "s/^password = \"<sql_icingaweb2_psw>\"$/password = \"$sql_icingaweb2_psw\"/" \
+  -e "s/^password = \"<sql_nmsprime_psw>\"$/password = \"$sql_nmsprime_psw\"/" \
+  -e "s/^password = \"<sql_director_psw>\"$/password = \"$sql_director_psw\"/;" /etc/icingaweb2/resources.ini
 icingacli module enable monitoring
 
-echo "CREATE DATABASE director CHARACTER SET 'utf8'; GRANT ALL ON director.* TO directoruser@localhost IDENTIFIED BY '$mysql_director_psw';" | mysql -u root --password="$mysql_root_psw"
+# Director
+sudo -u postgres createdb director
+sudo -Hiu postgres psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
+sudo -Hiu postgres psql -c "CREATE USER directoruser PASSWORD '$sql_director_psw'; GRANT ALL PRIVILEGES ON ALL Tables in schema public TO directoruser;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO directoruser"
+
 sed -i -e "s/password = \"<director_api_psw>\"/password = \"$director_api_psw\"/" \
   -e "s/password = \"<phone_api_psw>\"/password = \"$phone_api_psw\"/" \
   -e "s/password = \"<cmdtransport_api_psw>\"/password = \"$cmdtransport_api_psw\"/" /etc/icinga2/conf.d/nmsprime-api-users.conf
@@ -179,27 +279,37 @@ systemctl restart icinga2
 sleep 5
 icingacli director kickstart run
 
-mysql director -u directoruser --password="$mysql_director_psw" << "EOF"
-REPLACE INTO import_source VALUES (1,'nmsprime.netelement','id','Icinga\\Module\\Director\\Import\\ImportSourceSql','unknown',NULL,NULL,NULL);
-REPLACE INTO import_source_setting VALUES (1,'query', 'SELECT CONCAT(NE.id, \'_\', NE.name) AS id,
+# Replace 'REPLACE' by 'INSERT INTO' according to https://stackoverflow.com/questions/1109061/insert-on-duplicate-update-in-postgresql
+sudo -Hiu postgres psql director << "EOF"
+  INSERT INTO import_source VALUES (1,'nmsprime.netelement','id','Icinga\\Module\\Director\\Import\\ImportSourceSql','unknown',NULL,NULL,NULL)
+    ON CONFLICT (id) DO UPDATE SET
+      id = excluded.id,
+      source_name = excluded.source_name,
+      key_column = excluded.key_column,
+      provider_class = excluded.provider_class,
+      import_state = excluded.import_state,
+      last_error_message = excluded.last_error_message,
+      last_attempt = excluded.last_attempt,
+      description = excluded.description;
+    ;
+
+  INSERT INTO import_source_setting VALUES (1, 'query', 'SELECT CONCAT(NE.id, ''_'', NE.name) AS id,
   NE.name, NE.parent_id AS parent,
-  IF(NE.community_ro <> \'\', NE.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community,
-  IF(NE.ip <> \'\', SUBSTRING_INDEX(NE.ip, \':\', 1), \'127.0.0.1\') AS ip,
-  IF(INSTR(NE.ip, \':\') > 0, SUBSTRING_INDEX(NE.ip, \':\', -1), NULL) AS port,
-  IF(NT.base_type_id = 2, 1, NT.base_type_id) as netelementtype_id,
-  NT.vendor,
-  IF(NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE modem.deleted_at IS NULL), 1, 0) AS isbubble
-FROM netelement AS NE
-JOIN netelement AS NP ON NP.id = NE.parent_id
-JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
-WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'),
-(1,'resource','nmsprime');
+  CASE WHEN NE.community_ro <> '''' THEN NE.community_ro ELSE (SELECT ro_community FROM nmsprime.provbase WHERE deleted_at IS NULL) END AS ro_community,
+  CASE WHEN NE.ip <> '''' THEN SPLIT_PART(NE.ip, '':'', 1) ELSE ''127.0.0.1'' END AS ip,
+  CASE WHEN POSITION(NE.ip IN '':'') > 0 THEN SPLIT_PART(NE.ip, '':'', -1) ELSE NULL END AS port,
+  CASE WHEN NT.base_type_id = 2 THEN 1 ELSE NT.base_type_id END AS netelementtype_id, NT.vendor,
+  CASE WHEN NE.id IN (SELECT DISTINCT netelement_id FROM nmsprime.modem WHERE modem.deleted_at IS NULL) THEN 1 ELSE 0 END AS isbubble
+FROM nmsprime.netelement AS NE JOIN nmsprime.netelement AS NP ON NP.id = NE.parent_id
+  JOIN nmsprime.netelementtype AS NT ON NE.netelementtype_id = NT.id
+WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL'),
+  (1,'resource','nmsprime');
 
 INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
-REPLACE INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,'unknown',NULL,NULL,NULL);
-REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
-REPLACE INTO `director_job` VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL),(3,'deploy','Icinga\\Module\\Director\\Job\\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
-REPLACE INTO `director_job_setting` VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
+INSERT INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,'unknown',NULL,NULL,NULL);
+INSERT INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
+INSERT INTO director_job VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL),(3,'deploy','Icinga\\Module\\Director\\Job\\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO director_job_setting VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
 EOF
 
 hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
