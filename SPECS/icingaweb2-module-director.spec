@@ -175,12 +175,10 @@ else
 fi
 
 nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
-mysql_nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-mysql_nmsprime_user=$(grep 'username' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-mysql_nmsprime_psw=$(grep 'password' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 
 hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
-mysql --batch "$mysql_nmsprime_name" -u "$mysql_nmsprime_user" --password="$mysql_nmsprime_psw" -e "$hostgroupquery" | tail -n +2 | while read id name; do
+sudo -Hiu postgres psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     continue
@@ -313,7 +311,7 @@ INSERT INTO director_job_setting VALUES (1,'run_import','y'),(1,'source_id','1')
 EOF
 
 hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
-mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "$hostgroupquery" | tail -n +2 | while read id name; do
+sudo -Hiu postgres psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     continue
