@@ -83,7 +83,9 @@ nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2
 nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 nmsprime_user=$(grep 'username' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 nmsprime_pw=$(grep 'password' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-mysql --batch "$nmsprime_name" -u "$nmsprime_user" --password="$nmsprime_pw" -e "SELECT id, name FROM netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) AND id < 1000;" | tail -n +2 | while read id name; do
+
+hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
+mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "$hostgroupquery" | tail -n +2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     continue
@@ -185,7 +187,9 @@ REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL
 REPLACE INTO `director_job` VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL),(3,'deploy','Icinga\\Module\\Director\\Job\\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
 REPLACE INTO `director_job_setting` VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
 EOF
-mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "SELECT id, name FROM netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) AND id < 1000;" | tail -n +2 | while read id name; do
+
+hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
+mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "$hostgroupquery" | tail -n +2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     continue
