@@ -65,14 +65,16 @@ director_name=$(grep 'dbname' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" 
 director_user=$(grep 'username' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 director_pw=$(grep 'password' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 mysql "$director_name" -u "$director_user" --password="$director_pw" << "EOF"
-  UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, '_', NE.name) AS id,
+  UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, \'_\', NE.name) AS id,
   NE.name, NE.parent_id AS parent,
-  IF(NE.community_ro <> '', NE.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community,
-  IF(NE.ip <> '', SUBSTRING_INDEX(NE.ip, ':', 1), '127.0.0.1') AS ip,
-  IF(INSTR(NE.ip, ':') > 0, SUBSTRING_INDEX(NE.ip, ':', -1), NULL) AS port,
-  IF(NT.base_type_id = 2, 1, NT.base_type_id) as netelementtype_id, NT.vendor,
+  IF(NE.community_ro <> \'\', NE.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community,
+  IF(NE.ip <> \'\', SUBSTRING_INDEX(NE.ip, \':\', 1), \'127.0.0.1\') AS ip,
+  IF(INSTR(NE.ip, \':\') > 0, SUBSTRING_INDEX(NE.ip, \':\', -1), NULL) AS port,
+  IF(NT.base_type_id = 2, 1, NT.base_type_id) as netelementtype_id,
+  NT.vendor,
   IF(NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE modem.deleted_at IS NULL), 1, 0) AS isbubble
-FROM netelement AS NE JOIN netelement AS NP ON NP.id = NE.parent_id
+FROM netelement AS NE
+JOIN netelement AS NP ON NP.id = NE.parent_id
 JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
 WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'
 WHERE source_id = 1 and setting_name = 'query';
@@ -169,14 +171,16 @@ icingacli director kickstart run
 
 mysql director -u directoruser --password="$mysql_director_psw" << "EOF"
 REPLACE INTO import_source VALUES (1,'nmsprime.netelement','id','Icinga\\Module\\Director\\Import\\ImportSourceSql','unknown',NULL,NULL,NULL);
-REPLACE INTO import_source_setting VALUES (1,'query', 'SELECT CONCAT(NE.id, '_', NE.name) AS id,
+REPLACE INTO import_source_setting VALUES (1,'query', 'SELECT CONCAT(NE.id, \'_\', NE.name) AS id,
   NE.name, NE.parent_id AS parent,
-  IF(NE.community_ro <> '', NE.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community,
-  IF(NE.ip <> '', SUBSTRING_INDEX(NE.ip, ':', 1), '127.0.0.1') AS ip,
-  IF(INSTR(NE.ip, ':') > 0, SUBSTRING_INDEX(NE.ip, ':', -1), NULL) AS port,
-  IF(NT.base_type_id = 2, 1, NT.base_type_id) as netelementtype_id, NT.vendor,
+  IF(NE.community_ro <> \'\', NE.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community,
+  IF(NE.ip <> \'\', SUBSTRING_INDEX(NE.ip, \':\', 1), \'127.0.0.1\') AS ip,
+  IF(INSTR(NE.ip, \':\') > 0, SUBSTRING_INDEX(NE.ip, \':\', -1), NULL) AS port,
+  IF(NT.base_type_id = 2, 1, NT.base_type_id) as netelementtype_id,
+  NT.vendor,
   IF(NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE modem.deleted_at IS NULL), 1, 0) AS isbubble
-FROM netelement AS NE JOIN netelement AS NP ON NP.id = NE.parent_id
+FROM netelement AS NE
+JOIN netelement AS NP ON NP.id = NE.parent_id
 JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
 WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'),
 (1,'resource','nmsprime');
