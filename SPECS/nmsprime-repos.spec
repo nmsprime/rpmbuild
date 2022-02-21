@@ -21,7 +21,7 @@ rpm2cpio %{_sourcedir}/pgdg-redhat-repo-latest.noarch.rpm | cpio -ivdm
 cat << EOF >> nmsprime-os.repo
 [nmsprime-os]
 name=NMS Prime
-baseurl=https://repo.nmsprime.com/rpm/nmsprime-testing/os
+baseurl=https://repo.nmsprime.com/rpm/nmsprimeNG/os
 enabled=1
 gpgcheck=0
 sslverify=1
@@ -30,7 +30,7 @@ EOF
 cat << EOF >> nmsprime-prime.repo
 [nmsprime-prime]
 name=NMS Prime
-baseurl=https://repo.nmsprime.com/rpm/nmsprime-testing/prime
+baseurl=https://repo.nmsprime.com/rpm/nmsprimeNG/prime
 enabled=1
 gpgcheck=0
 sslverify=1
