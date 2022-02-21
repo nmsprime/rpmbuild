@@ -31,7 +31,7 @@ cat << EOF >> nmsprime-prime.repo
 [nmsprime-prime]
 name=NMS Prime
 baseurl=https://repo.nmsprime.com/rpm/nmsprimeNG/prime
-enabled=1
+enabled=0
 gpgcheck=0
 sslverify=1
 EOF
