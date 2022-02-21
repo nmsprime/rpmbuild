@@ -8,7 +8,7 @@ License: MIT
 URL: https://github.com/Icinga/%{name}
 Source: https://github.com/Icinga/%{name}/archive/refs/tags/v%{version}.tar.gz
 
-Requires: icinga2
+Requires: icinga2 icingacli
 
 %description
 This repository ships bleeding edge libraries useful for Icinga Web 2 modules. Please download the latest release and install it like any other module.
@@ -29,7 +29,7 @@ systemctl restart icinga2.service
 
 %changelog
 * Fri Jan 07 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 0.6.0-2
-- Add dependency icinga2
+- Add dependencies
 
 * Thu Oct 07 2021 Ole Ernst <ole.ernst@nmsprime.com> - 0.6.0-1
 - Initial RPM release

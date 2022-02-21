@@ -41,6 +41,9 @@ NBI_INTERFACE=localhost
 UI_INTERFACE=localhost
 UI_JWT_SECRET=secret
 EXT_DIR=%{_datadir}/%{name}/ext
+DEBUG=false
+DEBUG_FILE=/var/log/genieacs/genieacs-debug.yaml
+DEBUG_FORMAT=yaml
 EOF
 
 sed -i "s/^/$(echo %{name} | tr '[:lower:]' '[:upper:]')_/" %{name}.env

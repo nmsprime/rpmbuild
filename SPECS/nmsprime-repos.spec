@@ -18,10 +18,19 @@ rpm2cpio %{_sourcedir}/icinga-rpm-release-7-latest.noarch.rpm | cpio -ivdm
 rpm2cpio %{_sourcedir}/pgdg-redhat-repo-latest.noarch.rpm | cpio -ivdm
 
 %build
-cat << EOF >> nmsprime.repo
-[nmsprime]
+cat << EOF >> nmsprime-os.repo
+[nmsprime-os]
 name=NMS Prime
-baseurl=https://repo.nmsprime.com/rpm/nmsprimeOS
+baseurl=https://repo.nmsprime.com/rpm/nmsprime-testing/os
+enabled=1
+gpgcheck=0
+sslverify=1
+EOF
+
+cat << EOF >> nmsprime-prime.repo
+[nmsprime-prime]
+name=NMS Prime
+baseurl=https://repo.nmsprime.com/rpm/nmsprime-testing/prime
 enabled=1
 gpgcheck=0
 sslverify=1
@@ -71,7 +80,8 @@ gpgkey=https://rpms.remirepo.net/RPM-GPG-KEY-remi
 EOF
 
 %install
-install -Dm 644 nmsprime.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime.repo
+install -Dm 644 nmsprime-os.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime-os.repo
+install -Dm 644 nmsprime-prime.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime-prime.repo
 install -Dm 644 mongodb-org-4.4.repo %{buildroot}%{_sysconfdir}/yum.repos.d/mongodb-org-4.4.repo
 install -Dm 644 timescale_timescaledb.repo %{buildroot}%{_sysconfdir}/yum.repos.d/timescale_timescaledb.repo
 install -Dm 644 grafana.repo %{buildroot}%{_sysconfdir}/yum.repos.d/grafana.repo
@@ -81,7 +91,8 @@ install -Dm 644 ./etc/yum.repos.d/ICINGA-release.repo %{buildroot}%{_sysconfdir}
 install -Dm 644 ./etc/pki/rpm-gpg/RPM-GPG-KEY-ICINGA %{buildroot}%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-ICINGA
 install -Dm 644 ./etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG %{buildroot}%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-PGDG
 
-rm nmsprime.repo
+rm nmsprime-os.repo
+rm nmsprime-prime.repo
 rm mongodb-org-4.4.repo
 rm timescale_timescaledb.repo
 rm grafana.repo
