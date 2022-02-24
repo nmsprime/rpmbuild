@@ -61,10 +61,10 @@ mv sas2ircu %{buildroot}%{_bindir}
 %post
 if [ $1 -ne 1 ]; then
 director_sec=$(awk '/\[director\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
-director_name=$(grep 'dbname' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-director_user=$(grep 'username' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-director_pw=$(grep 'password' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-mysql "$director_name" -u "$director_user" --password="$director_pw" << "EOF"
+mysql_director_name=$(grep 'dbname' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+mysql_director_user=$(grep 'username' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+mysql_director_psw=$(grep 'password' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+mysql "$mysql_director_name" -u "$mysql_director_user" --password="$mysql_director_psw" << "EOF"
   UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, \'_\', NE.name) AS id,
   NE.name, NE.parent_id AS parent,
   IF(NE.community_ro <> \'\', NE.community_ro, (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)) AS ro_community,
@@ -82,12 +82,12 @@ REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL
 EOF
 
 nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
-nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-nmsprime_user=$(grep 'username' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
-nmsprime_pw=$(grep 'password' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+mysql_nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+mysql_nmsprime_user=$(grep 'username' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+mysql_nmsprime_psw=$(grep 'password' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 
 hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
-mysql --batch nmsprime -u nmsprime --password="$mysql_nmsprime_psw" -e "$hostgroupquery" | tail -n +2 | while read id name; do
+mysql --batch "$mysql_nmsprime_name" -u "$mysql_nmsprime_user" --password="$mysql_nmsprime_psw" -e "$hostgroupquery" | tail -n +2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     continue
