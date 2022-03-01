@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.8.1
-Release: 4
+Release: 6
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -64,6 +64,14 @@ director_sec=$(awk '/\[director\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2
 mysql_director_name=$(grep 'dbname' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 mysql_director_user=$(grep 'username' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 mysql_director_psw=$(grep 'password' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+
+if icingacli director migration pending ; then
+  echo "Running Icinga Migrations"
+  icingacli director migration run
+else
+  echo "No Migration Necessary"
+fi
+
 mysql "$mysql_director_name" -u "$mysql_director_user" --password="$mysql_director_psw" << "EOF"
   UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, \'_\', NE.name) AS id,
   NE.name, NE.parent_id AS parent,
@@ -216,6 +224,9 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Mon Feb 28 2022 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-6
+- automate Icinga Migration
+
 * Fri Jan 14 2022 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-5
 - remove cron/job file and use icinga systemd service
 - Add deployment Job to keep nmsprime and icinga in sync
