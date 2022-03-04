@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.8.1
-Release: 4
+Release: 6
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -64,6 +64,14 @@ director_sec=$(awk '/\[director\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2
 mysql_director_name=$(grep 'dbname' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 mysql_director_user=$(grep 'username' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 mysql_director_psw=$(grep 'password' <<< "$director_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+
+if icingacli director migration pending ; then
+  echo "Running Icinga Migrations"
+  icingacli director migration run
+else
+  echo "No Migration Necessary"
+fi
+
 mysql "$mysql_director_name" -u "$mysql_director_user" --password="$mysql_director_psw" << "EOF"
   UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, \'_\', NE.name) AS id,
   NE.name, NE.parent_id AS parent,
@@ -79,6 +87,8 @@ JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
 WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'
 WHERE source_id = 1 and setting_name = 'query';
 REPLACE INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
+REPLACE INTO `director_job` VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL),(3,'deploy','Icinga\\Module\\Director\\Job\\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
+REPLACE INTO `director_job_setting` VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
 EOF
 
 nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
@@ -216,6 +226,10 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Mon Feb 28 2022 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-6
+- automate Icinga Migration
+- fix: add automation tasks on update
+
 * Fri Jan 14 2022 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-5
 - remove cron/job file and use icinga systemd service
 - Add deployment Job to keep nmsprime and icinga in sync
