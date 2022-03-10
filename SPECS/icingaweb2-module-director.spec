@@ -310,6 +310,9 @@ INSERT INTO director_job VALUES (1,'nmsprime.netelement','Icinga\\Module\\Direct
 INSERT INTO director_job_setting VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
 EOF
 
+nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
+nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
+
 hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
 sudo -Hiu postgres psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
