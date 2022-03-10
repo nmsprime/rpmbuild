@@ -348,7 +348,7 @@ done
 * Thu Jan 13 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 1.8.1-4
 - fix: Add dependency rh-php-73-process for director
 
-* Wed Jan 10 2022 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-3
+* Mon Jan 10 2022 Christian Schramm <christian.schramm@nmsprime.com> - 1.8.1-3
 - Remove getTopNetelementType DB function and use base_type_id column instead
 
 * Wed Oct 27 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.8.1-2
