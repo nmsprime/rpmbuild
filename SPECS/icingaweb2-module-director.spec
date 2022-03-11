@@ -214,7 +214,10 @@ sed -i 's|http_uri = "/"|http_uri = "/nmsprime"\n    http_ssl = "true"\n    http
 sed -i '/import "generic-host"/a\ \ vars.procs_warning = "300"' /etc/icinga2/conf.d/hosts.conf
 
 sudo -u postgres createdb icinga2
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "CREATE USER icinga2user PASSWORD '$sql_icinga2_psw'; GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icinga2user";
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "
+  CREATE USER icinga2user PASSWORD '$sql_icinga2_psw';
+  GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icinga2user;
+"
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 << EOF
   ALTER TABLE icinga_objects ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
@@ -259,8 +262,11 @@ icingacli module enable monitoring
 # Director
 sudo -u postgres createdb director
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "CREATE USER directoruser PASSWORD '$sql_director_psw'; GRANT ALL PRIVILEGES ON ALL Tables in schema public TO directoruser;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO directoruser"
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "
+  CREATE USER directoruser PASSWORD '$sql_director_psw';
+  GRANT ALL PRIVILEGES ON ALL Tables in schema public TO directoruser;
+  GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO directoruser;
+"
 
 sed -i -e "s/password = \"<director_api_psw>\"/password = \"$director_api_psw\"/" \
   -e "s/password = \"<phone_api_psw>\"/password = \"$phone_api_psw\"/" \
