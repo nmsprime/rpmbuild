@@ -66,7 +66,7 @@ if [ $1 -ne 1 ]; then
 
 # If postgres DB is not yet there - move Data from mysql to postgres
 # TODO: Remove all the DB conversion stuff in next version
-sudo -Hiu postgres psql -lqt | cut -d '|' -f 1 | grep -w icinga2
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -lqt | cut -d '|' -f 1 | grep -w icinga2
 
 if [ $? -eq 1 ]; then
 
@@ -96,20 +96,20 @@ for db in icinga2 icingaweb2 director; do
 
   psw=$(awk "/\[$db\]/{flag=1;next}/\[/{flag=0}flag" /etc/icingaweb2/resources.ini | grep "^password" | sort | cut -d '=' -f2 | xargs)
   user=${db}user
-  sudo -Hiu postgres psql -c "CREATE USER $user PASSWORD '$psw'"
+  sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "CREATE USER $user PASSWORD '$psw'"
   echo $user
 done
 
 # Create DB Schema
-sudo -Hiu postgres psql icinga2 < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql
-sudo -Hiu postgres psql icinga2 << EOF
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 << EOF
   ALTER TABLE icinga_objects ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
   ALTER TABLE icinga_hoststatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
   ALTER TABLE icinga_servicestatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
 EOF
 
-sudo -Hiu postgres psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
-sudo -Hiu postgres psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
+sudo -Hiu postgres /usr/pgsql-13/bin/psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
 icingacli director migration run
 
 read -r -a credentials <<< $(grep '^ROOT_DB_USERNAME\|^ROOT_DB_PASSWORD=' /etc/nmsprime/env/root.env | cut -d '=' -f2)
@@ -121,7 +121,7 @@ for db in icinga2 icingaweb2 director; do
   sudo -u postgres pgloader -q $cmdFile
 
   user=${db}user
-  sudo -Hiu postgres psql $db -c "
+  sudo -Hiu postgres /usr/pgsql-13/bin/psql $db -c "
     ALTER ROLE $user set search_path to 'public';
     ALTER ROLE postgres set search_path to 'public';
     GRANT USAGE ON SCHEMA public TO $user;
@@ -129,7 +129,7 @@ for db in icinga2 icingaweb2 director; do
     GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $user;"
 done
 
-sudo -Hiu postgres psql director << "EOF"
+sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
   UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, ''_'', NE.name) AS id,
   NE.name, NE.parent_id AS parent,
   CASE WHEN NE.community_ro <> '''' THEN NE.community_ro ELSE (SELECT ro_community FROM nmsprime.provbase WHERE deleted_at IS NULL) END AS ro_community,
@@ -178,7 +178,7 @@ nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2
 nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 
 hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
-sudo -Hiu postgres psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | while read id name; do
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     continue
@@ -214,9 +214,9 @@ sed -i 's|http_uri = "/"|http_uri = "/nmsprime"\n    http_ssl = "true"\n    http
 sed -i '/import "generic-host"/a\ \ vars.procs_warning = "300"' /etc/icinga2/conf.d/hosts.conf
 
 sudo -u postgres createdb icinga2
-sudo -Hiu postgres psql -c "CREATE USER icinga2user PASSWORD '$sql_icinga2_psw'; GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icinga2user";
-sudo -Hiu postgres psql icinga2 < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql
-sudo -Hiu postgres psql icinga2 << EOF
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "CREATE USER icinga2user PASSWORD '$sql_icinga2_psw'; GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icinga2user";
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 << EOF
   ALTER TABLE icinga_objects ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
   ALTER TABLE icinga_hoststatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
   ALTER TABLE icinga_servicestatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
@@ -244,11 +244,11 @@ icinga2 api setup
 
 # Icingaweb2
 sudo -u postgres createdb icingaweb2
-sudo -Hiu postgres psql -c "CREATE USER icingaweb2user PASSWORD '$sql_icingaweb2_psw';
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "CREATE USER icingaweb2user PASSWORD '$sql_icingaweb2_psw';
   GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icingaweb2user;
   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO icingaweb2user;"
-sudo -Hiu postgres psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
-sudo -Hiu postgres psql icingaweb2 -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');"
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');"
 
 sed -i -e "s/^password = \"<sql_icinga2_psw>\"$/password = \"$sql_icinga2_psw\"/" \
   -e "s/^password = \"<sql_icingaweb2_psw>\"$/password = \"$sql_icingaweb2_psw\"/" \
@@ -258,8 +258,8 @@ icingacli module enable monitoring
 
 # Director
 sudo -u postgres createdb director
-sudo -Hiu postgres psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
-sudo -Hiu postgres psql -c "CREATE USER directoruser PASSWORD '$sql_director_psw'; GRANT ALL PRIVILEGES ON ALL Tables in schema public TO directoruser;
+sudo -Hiu postgres /usr/pgsql-13/bin/psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "CREATE USER directoruser PASSWORD '$sql_director_psw'; GRANT ALL PRIVILEGES ON ALL Tables in schema public TO directoruser;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO directoruser"
 
 sed -i -e "s/password = \"<director_api_psw>\"/password = \"$director_api_psw\"/" \
@@ -278,7 +278,7 @@ sleep 5
 icingacli director kickstart run
 
 # Replace 'REPLACE' by 'INSERT INTO' according to https://stackoverflow.com/questions/1109061/insert-on-duplicate-update-in-postgresql
-sudo -Hiu postgres psql director << "EOF"
+sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
   INSERT INTO import_source VALUES (1,'nmsprime.netelement','id','Icinga\\Module\\Director\\Import\\ImportSourceSql','unknown',NULL,NULL,NULL)
     ON CONFLICT (id) DO UPDATE SET
       id = excluded.id,
@@ -314,7 +314,7 @@ nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2
 nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 
 hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
-sudo -Hiu postgres psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | while read id name; do
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | while read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     continue
