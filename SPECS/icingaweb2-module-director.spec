@@ -226,6 +226,7 @@ EOF
 sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "
   CREATE USER icinga2user PASSWORD '$sql_icinga2_psw';
   GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icinga2user;
+  GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO icinga2user;
 "
 
 sed -i -e 's|//user =.*|user = "icinga2user"|' \
