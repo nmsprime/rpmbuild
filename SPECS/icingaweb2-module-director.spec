@@ -74,6 +74,7 @@ sed -i 's/^db = \"mysql\"/db = \"pgsql\"/' /etc/icingaweb2/resources.ini
 sed -i 's/^port =.*/port = 5432/' /etc/icingaweb2/resources.ini
 sed -i 's/^charset = \".*\"/charset = \"utf8\"/' /etc/icingaweb2/resources.ini
 
+systemctl daemon-reload
 systemctl stop icinga2 icinga-director
 
 # Prepare DB conversion statements for pgloader
