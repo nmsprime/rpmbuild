@@ -223,7 +223,7 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 << EOF
   ALTER TABLE icinga_servicestatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
 EOF
 
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 -c "
   CREATE USER icinga2user PASSWORD '$sql_icinga2_psw';
   GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icinga2user;
   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO icinga2user;
@@ -252,8 +252,8 @@ icinga2 api setup
 # Icingaweb2
 sudo -u postgres createdb icingaweb2
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
-sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');"
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 -c "
+  INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');
   CREATE USER icingaweb2user PASSWORD '$sql_icingaweb2_psw';
   GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icingaweb2user;
   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO icingaweb2user;
@@ -268,7 +268,7 @@ icingacli module enable monitoring
 # Director
 sudo -u postgres createdb director
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "
+sudo -Hiu postgres /usr/pgsql-13/bin/psql director -c "
   CREATE USER directoruser PASSWORD '$sql_director_psw';
   GRANT ALL PRIVILEGES ON ALL Tables in schema public TO directoruser;
   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO directoruser;
