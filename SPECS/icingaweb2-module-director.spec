@@ -215,16 +215,18 @@ sed -i 's|http_uri = "/"|http_uri = "/nmsprime"\n    http_ssl = "true"\n    http
 sed -i '/import "generic-host"/a\ \ vars.procs_warning = "300"' /etc/icinga2/conf.d/hosts.conf
 
 sudo -u postgres createdb icinga2
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "
-  CREATE USER icinga2user PASSWORD '$sql_icinga2_psw';
-  GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icinga2user;
-"
+
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 << EOF
   ALTER TABLE icinga_objects ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
   ALTER TABLE icinga_hoststatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
   ALTER TABLE icinga_servicestatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
 EOF
+
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "
+  CREATE USER icinga2user PASSWORD '$sql_icinga2_psw';
+  GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icinga2user;
+"
 
 sed -i -e 's|//user =.*|user = "icinga2user"|' \
   -e "s|//password =.*|password = \"$sql_icinga2_psw\"|" \
@@ -248,11 +250,13 @@ icinga2 api setup
 
 # Icingaweb2
 sudo -u postgres createdb icingaweb2
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "CREATE USER icingaweb2user PASSWORD '$sql_icingaweb2_psw';
-  GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icingaweb2user;
-  GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO icingaweb2user;"
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');"
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "
+  CREATE USER icingaweb2user PASSWORD '$sql_icingaweb2_psw';
+  GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icingaweb2user;
+  GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO icingaweb2user;
+"
 
 sed -i -e "s/^password = \"<sql_icinga2_psw>\"$/password = \"$sql_icinga2_psw\"/" \
   -e "s/^password = \"<sql_icingaweb2_psw>\"$/password = \"$sql_icingaweb2_psw\"/" \
