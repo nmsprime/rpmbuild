@@ -316,11 +316,11 @@ FROM nmsprime.netelement AS NE JOIN nmsprime.netelement AS NP ON NP.id = NE.pare
 WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL'),
   (1,'resource','nmsprime');
 
-INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
-INSERT INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,'unknown',NULL,NULL,NULL);
-INSERT INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
-INSERT INTO director_job VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL),(3,'deploy','Icinga\\Module\\Director\\Job\\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO director_job_setting VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
+  INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
+  INSERT INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,'unknown',NULL,NULL,NULL);
+  INSERT INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
+  INSERT INTO director_job VALUES (1,'nmsprime.netelement','Icinga\\Module\\Director\\Job\\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL),(2,'syncHosts','Icinga\\Module\\Director\\Job\\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL),(3,'deploy','Icinga\\Module\\Director\\Job\\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
+  INSERT INTO director_job_setting VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
 EOF
 
 nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
