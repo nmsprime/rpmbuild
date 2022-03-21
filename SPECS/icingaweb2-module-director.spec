@@ -235,8 +235,9 @@ sed -i -e 's|//user =.*|user = "icinga2user"|' \
   -e 's|//database =.*|database = "icinga2"|' /etc/icinga2/features-available/ido-pgsql.conf
 chown icinga:icinga /etc/icinga2/features-available/ido-pgsql.conf
 
-sed -i "s/vars.mysql_password = \"<mysql_icinga2_psw>\"/vars.mysql_password = \"$sql_icinga2_psw\"/" /etc/icinga2/conf.d/nmsprime-services.conf
-sed -i "s/vars.sql_password = \"<pgsql_icinga2_psw>\"/vars.sql_password = \"$sql_icinga2_psw\"/" /etc/icinga2/conf.d/nmsprime-services.conf
+sqlCactiPsw=$(grep CACTI_DB_PASSW /etc/nmsprime/env/provmon.env | cut -d '=' -f2)
+sed -i "s/vars.mysql_password = \"<mysql_cacti_psw>\"/vars.mysql_password = \"$sqlCactiPsw\"/" /etc/icinga2/conf.d/nmsprime-services.conf
+sed -i "s/vars.pgsql_password = \"<pgsql_icinga2_psw>\"/vars.pgsql_password = \"$sql_icinga2_psw\"/" /etc/icinga2/conf.d/nmsprime-services.conf
 
 systemctl enable icinga2
 systemctl start icinga2
@@ -252,8 +253,8 @@ icinga2 api setup
 # Icingaweb2
 sudo -u postgres createdb icingaweb2
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
+echo "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');" | sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 -c "
-  INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');
   CREATE USER icingaweb2user PASSWORD '$sql_icingaweb2_psw';
   GRANT ALL PRIVILEGES ON ALL Tables in schema public TO icingaweb2user;
   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO icingaweb2user;
