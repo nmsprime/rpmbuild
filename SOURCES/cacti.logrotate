@@ -1,0 +1,8 @@
+/var/log/cacti/cacti.log {
+	weekly
+	rotate 7
+	missingok
+	notifempty
+	compress
+	su apache apache
+}
