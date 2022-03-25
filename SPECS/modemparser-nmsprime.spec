@@ -6,20 +6,21 @@ Summary: A highly efficient modem parser written in Rust
 Group: Applications/Communications
 License: GPLv3
 URL: https://github.com/nmsprime/modemparser
-Source: https://github.com/nmsprime/modemparser/archive/refs/heads/main.tar.gz
 
-BuildRequires: cargo openssl-devel rust
+BuildRequires: cargo git openssl-devel rust
 
 %description
 A highly efficient modem parser for DOCSIS / SNMP and CWMP / TR069 devices written in Rust.
 
 %prep
-%autosetup -p1 -n modemparser-main
+git clone git@github.com:nmsprime/modemparser.git
 
 %build
+cd modemparser
 cargo rustc --release
 
 %install
+cd modemparser
 install -Dm755 target/release/modemparser %{buildroot}%{_bindir}/%{name}
 
 %files
