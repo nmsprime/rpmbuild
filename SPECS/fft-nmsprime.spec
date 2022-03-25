@@ -6,19 +6,21 @@ Summary: A highly efficient FFT used for PNM data
 Group: Applications/Communications
 License: GPLv3
 URL: https://github.com/nmsprime/fft-nmsprime
-Source: https://raw.githubusercontent.com/nmsprime/fft-nmsprime/master/src/%{name}.c
 
-BuildRequires: gcc fftw-devel
+BuildRequires: gcc fftw-devel git
 Requires: fftw-libs-double
 
 %description
 A highly efficient FFT used for PNM data.
 
+%prep
+git clone git@github.com:nmsprime/%{name}.git
+
 %build
-gcc -std=c99 -s -O3 -Wall -lm -lfftw3 -o %{name} %{_sourcedir}/%{name}.c
+gcc -std=c99 -s -O3 -Wall -lm -lfftw3 -o %{name}/%{name} %{name}/src/%{name}.c
 
 %install
-install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}
+install -Dm755 %{name}/%{name} %{buildroot}%{_bindir}/%{name}
 
 %files
 %{_bindir}/%{name}

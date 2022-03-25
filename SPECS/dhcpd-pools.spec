@@ -1,5 +1,5 @@
 Name: dhcpd-pools
-Version: 3.0
+Version: 3.1
 Release: 1
 Summary: ISC dhcpd leases usage analysis
 
@@ -17,6 +17,7 @@ This is dhcpd-pools - ISC dhcpd lease status utility.
 %autosetup
 
 %build
+CFLAGS="%{optflags} -std=c99"
 %configure
 make %{?_smp_mflags}
 
@@ -26,12 +27,12 @@ make %{?_smp_mflags}
 
 %files
 %{_bindir}/%{name}
-%{_datarootdir}/%{name}/%{name}.cgi
-%{_datarootdir}/%{name}/nagios.conf
-%{_datarootdir}/%{name}/snmptest.pl
-%{_mandir}/man1/%{name}.1.gz
+%{_datarootdir}/*
 
 %changelog
+* Fri Mar 25 2022 Ole Ernst <ole.ernst@nmsprime.com> - 3.1-1
+- upgpkg
+
 * Tue Mar 17 2020 Ole Ernst <ole.ernst@roetzer-engineering.com> - 3.0-1
 - upgpkg
 
