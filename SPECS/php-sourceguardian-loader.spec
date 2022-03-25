@@ -28,8 +28,6 @@ EOF
 install -Dm644 01-sourceguardian_loader.ini %{buildroot}%{_sysconfdir}/opt/remi/php80/php.d/01-sourceguardian_loader.ini
 install -Dm755 ixed.8.0.lin %{buildroot}/opt/remi/php80/root/usr/lib64/php/modules/ixed.8.0.lin
 
-systemctl restart php80-php-fpm.service
-
 %files
 %doc README
 %license LICENSE.pdf
