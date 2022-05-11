@@ -5,7 +5,7 @@ if [ ! "$1" = 'outage' -a ! "$1" = 'proactive' -o "$#" -ne 2 ]; then
   exit 2
 fi
 
-output="$(grep -m1 "^[^|]*|'$2_single'=" "$dir/$1.csv")"
+output="$(grep -m1 "^[^|]*|'$2_single" "$dir/$1.csv")"
 
 if [ -z "$output" ]; then
   echo "OK|'$2'=0;0;0;0;0"
