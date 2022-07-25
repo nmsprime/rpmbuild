@@ -1,0 +1,183 @@
+--- a/env/lib/python3.8/site-packages/napalm/ios/utils/textfsm_templates/show_lldp_neighbors_detail.tpl
++++ b/env/lib/python3.8/site-packages/napalm/ios/utils/textfsm_templates/show_lldp_neighbors_detail.tpl
+@@ -8,7 +8,7 @@
+ Value REMOTE_SYSTEM_ENABLE_CAPAB (.*)
+ 
+ Start
+-  ^Local Intf\s*?[:-]\s+${LOCAL_INTERFACE}
++  ^Local Int(?:er)?f(?:ace)?\s*?[:-]\s+${LOCAL_INTERFACE}
+   ^Chassis id\s*?[:-]\s+${REMOTE_CHASSIS_ID}
+   ^Port id\s*?[:-]\s+${REMOTE_PORT}
+   ^Port Description\s*?[:-]\s+${REMOTE_PORT_DESCRIPTION}
+--- a/env/lib/python3.8/site-packages/napalm/base/constants.py
++++ b/env/lib/python3.8/site-packages/napalm/base/constants.py
+@@ -70,6 +70,7 @@
+ }
+ LLDP_CAPAB_TRANFORM_TABLE = {
+     "o": "other",
++    "n/a": "other",
+     "p": "repeater",
+     "b": "bridge",
+     "w": "wlan-access-point",
+--- a/env/lib/python3.8/site-packages/napalm/ios/ios.py
++++ b/env/lib/python3.8/site-packages/napalm/ios/ios.py
+@@ -958,6 +958,13 @@
+             if " uptime is " in line:
+                 hostname, uptime_str = line.split(" uptime is ")
+                 uptime = self.parse_uptime(uptime_str)
++
++                if hostname == 'System':
++                    show_run_in_hostname = self._send_command("show run | include ^hostname")
++                    for line in show_run_in_hostname.splitlines():
++                        if line.startswith('hostname '):
++                            _, hostname = line.split("hostname ")
++
+                 hostname = hostname.strip()
+ 
+             if "Processor board ID" in line:
++++ a/env/lib/python3.8/site-packages/jnpr/junos/factcache.py
++++ b/env/lib/python3.8/site-packages/jnpr/junos/factcache.py
+@@ -1,13 +1,14 @@
+-import collections
+ import warnings
+ from pprint import pformat
+ 
++from six.moves.collections_abc import MutableMapping
++
+ import jnpr.junos.facts
+ from jnpr.junos.facts import __doc__ as facts_doc
+ import jnpr.junos.exception
+ 
+ 
+-class _FactCache(collections.MutableMapping):
++class _FactCache(MutableMapping):
+     """
+     A dictionary-like object which performs on-demand fact gathering.
+ 
+--- a/generate_topology.py
++++ b/generate_topology.py
+@@ -29,6 +29,7 @@ Open diff_page.html or use navigation buttons on main.html to view changes.
+ 
+ import os
+ import json
++import sys
+ 
+ from nornir import InitNornir
+ from nornir.plugins.tasks.networking import napalm_get
+@@ -38,6 +39,10 @@ OUTPUT_TOPOLOGY_FILENAME = 'topology.js'
+ CACHED_TOPOLOGY_FILENAME = 'cached_topology.json'
+ TOPOLOGY_FILE_HEAD = "\n\nvar topologyData = "
+ 
++if len(sys.argv) != 3:
++    sys.stderr.write("usage: {} <host_file> <topology_out_dir>\n".format(sys.argv[0]))
++    sys.exit(1)
++
+ # Topology layers would be sorted
+ # in the same descending order
+ # as in the tuple below
+@@ -56,7 +61,18 @@ NX_LAYER_SORT_ORDER = (
+ )
+ 
+ 
+-nr = InitNornir(config_file=NORNIR_CONFIG_FILE)
++nr = InitNornir(
++    core={
++        "num_workers": 20,
++    },
++    inventory={
++        "plugin": "nornir.plugins.inventory.simple.SimpleInventory",
++        "options": {
++            "host_file": sys.argv[1],
++            "group_file": "/opt/topologydetector-nmsprime/groups.yaml"
++        },
++    },
++)
+ 
+ icon_capability_map = {
+     'router': 'router',
+@@ -87,25 +103,18 @@ icon_model_map = {
+ }
+ 
+ 
+-interface_full_name_map = {
+-    'Eth': 'Ethernet',
+-    'Fa': 'FastEthernet',
+-    'Gi': 'GigabitEthernet',
+-    'Te': 'TenGigabitEthernet',
+-}
+-
+-
+-def if_fullname(ifname):
+-    for k, v in interface_full_name_map.items():
+-        if ifname.startswith(v):
+-            return ifname
+-        if ifname.startswith(k):
+-            return ifname.replace(k, v)
+-    return ifname
++interface_full_name_map = [
++    ('Eth', 'Ethernet'),
++    ('Fa',  'FastEthernet'),
++    ('Gi',  'GigabitEthernet'),
++    ('Te',  'TenGigabitEthernet'),
++    ('Hu',  'HundredGigabitEthernet'),
++    ('Hu',  'HundredGigE'),
++]
+ 
+ 
+ def if_shortname(ifname):
+-    for k, v in interface_full_name_map.items():
++    for k, v in interface_full_name_map:
+         if ifname.startswith(v):
+             return ifname.replace(v, k)
+     return ifname
+@@ -219,10 +228,10 @@ def extract_lldp_details(lldp_data_dict):
+                     lldp_capabilities_dict[neighbor['remote_system_name']] = ''
+                 # Store interconnections in a following format:
+                 # ((source_hostname, source_port), (dest_hostname, dest_port))
+-                local_end = (host, interface)
++                local_end = (host, if_shortname(interface))
+                 remote_end = (
+                     neighbor['remote_system_name'],
+-                    if_fullname(neighbor['remote_port'])
++                    if_shortname(neighbor['remote_port'])
+                 )
+                 # Check if the link is not a permutation of already added one
+                 # (local_end, remote_end) equals (remote_end, local_end)
+@@ -233,8 +242,8 @@ def extract_lldp_details(lldp_data_dict):
+                 if link_is_already_there:
+                     continue
+                 global_interconnections.append((
+-                    (host, interface),
+-                    (neighbor['remote_system_name'], if_fullname(neighbor['remote_port']))
++                    (host, if_shortname(interface)),
++                    (neighbor['remote_system_name'], if_shortname(neighbor['remote_port']))
+                 ))
+     return [discovered_hosts, global_interconnections, lldp_capabilities_dict]
+ 
+@@ -280,6 +289,8 @@ def generate_topology_json(*args):
+         host_id += 1
+     link_id = 0
+     for link in interconnections:
++        if 'bundle' in if_shortname(link[0][1]).lower() or 'bundle' in if_shortname(link[1][1]).lower():
++            continue
+         topology_dict['links'].append({
+             'id': link_id,
+             'source': host_id_map[link[0][0]],
+@@ -293,7 +304,7 @@ def generate_topology_json(*args):
+     return topology_dict
+ 
+ 
+-def write_topology_file(topology_json, header=TOPOLOGY_FILE_HEAD, dst=OUTPUT_TOPOLOGY_FILENAME):
++def write_topology_file(topology_json, header=TOPOLOGY_FILE_HEAD, dst=os.path.join(sys.argv[2], OUTPUT_TOPOLOGY_FILENAME)):
+     with open(dst, 'w') as topology_file:
+         topology_file.write(header)
+         topology_file.write(json.dumps(topology_json, indent=4, sort_keys=True))
+@@ -479,6 +490,8 @@ def good_luck_have_fun():
+     write_topology_file(TOPOLOGY_DICT)
+     write_topology_cache(TOPOLOGY_DICT)
+     print('Open main.html in a project root with your browser to view the topology')
++    return
++
+     if CACHED_TOPOLOGY:
+         DIFF_DATA = get_topology_diff(CACHED_TOPOLOGY, TOPOLOGY_DICT)
+         print_diff(DIFF_DATA)
