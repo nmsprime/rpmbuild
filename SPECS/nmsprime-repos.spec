@@ -79,7 +79,17 @@ gpgcheck=1
 gpgkey=https://rpms.remirepo.net/RPM-GPG-KEY-remi
 EOF
 
+cat << EOF > influxdb.repo
+[influxdb]
+name = InfluxDB Repository - RHEL
+baseurl = https://repos.influxdata.com/rhel/7/x86_64/stable/
+enabled = 1
+gpgcheck = 1
+gpgkey = https://repos.influxdata.com/influxdb.key
+EOF
+
 %install
+install -Dm 644 influxdb.repo %{buildroot}%{_sysconfdir}/yum.repos.d/influxdb.repo
 install -Dm 644 nmsprime-os.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime-os.repo
 install -Dm 644 nmsprime-prime.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime-prime.repo
 install -Dm 644 mongodb-org-4.4.repo %{buildroot}%{_sysconfdir}/yum.repos.d/mongodb-org-4.4.repo
@@ -91,6 +101,7 @@ install -Dm 644 ./etc/yum.repos.d/ICINGA-release.repo %{buildroot}%{_sysconfdir}
 install -Dm 644 ./etc/pki/rpm-gpg/RPM-GPG-KEY-ICINGA %{buildroot}%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-ICINGA
 install -Dm 644 ./etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG %{buildroot}%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-PGDG
 
+rm influxdb.repo
 rm nmsprime-os.repo
 rm nmsprime-prime.repo
 rm mongodb-org-4.4.repo
@@ -105,6 +116,9 @@ rm -rf ./usr
 %config(noreplace) %{_sysconfdir}/*
 
 %changelog
+* Wed Aug 05 2022 Nino Ryschway <nino.ryschawy@nmsprime.com> - 3.2.0-1
+- Add Telegraf repository
+
 * Wed Oct 27 2021 Christian Schramm <christian.schramm@nmsprime.com> - 3.1.0-1
 - Add PHP 8 repositories
 
