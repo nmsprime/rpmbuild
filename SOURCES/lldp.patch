@@ -35,6 +35,52 @@
                  hostname = hostname.strip()
  
              if "Processor board ID" in line:
+@@ -1048,7 +1055,7 @@
+         command = "show interfaces"
+         output = self._send_command(command)
+ 
+-        interface = description = mac_address = speed = speedformat = ""
++        interface = description = mac_address = speed = speedformat = utilization = input_errors = output_errors = ""
+         is_enabled = is_up = None
+ 
+         interface_dict = {}
+@@ -1098,6 +1105,21 @@
+                     speed = speed * 1000
+                 speed = int(round(speed))
+ 
++            utilization_regex = r"^\s+reliability\s+(\d+)\/(\d+),\s+txload\s+(\d+)\/(\d+), rxload (\d+)\/(\d+)"
++            if re.search(utilization_regex, line):
++                utilization_match = re.search(utilization_regex, line)
++                utilization = round((int(utilization_match.groups()[2]) + int(utilization_match.groups()[4])) / (int(utilization_match.groups()[3]) + int(utilization_match.groups()[5])) * 10) / 10
++
++            input_errors_regex = r"^\s+(\d+)\s+input\s+errors"
++            if re.search(input_errors_regex, line):
++                input_errors_match = re.search(input_errors_regex, line)
++                input_errors = int(input_errors_match.groups()[0])
++
++            output_errors_regex = r"^\s+(\d+)\s+input\s+errors"
++            if re.search(output_errors_regex, line):
++                output_errors_match = re.search(output_errors_regex, line)
++                output_errors = int(output_errors_match.groups()[0])
++
+                 if interface == "":
+                     raise ValueError(
+                         "Interface attributes were \
+@@ -1114,9 +1136,12 @@
+                     "last_flapped": last_flapped,
+                     "mtu": mtu,
+                     "speed": speed,
++                    "utilization": utilization,
++                    "input_errors": input_errors,
++                    "output_errors": output_errors,
+                 }
+ 
+-                interface = description = mac_address = speed = speedformat = ""
++                interface = description = mac_address = speed = speedformat = utilization = input_errors = output_errors = ""
+                 is_enabled = is_up = None
+ 
+         return interface_dict
+
 +++ a/env/lib/python3.8/site-packages/jnpr/junos/factcache.py
 +++ b/env/lib/python3.8/site-packages/jnpr/junos/factcache.py
 @@ -1,13 +1,14 @@
