@@ -80,7 +80,54 @@
                  is_enabled = is_up = None
  
          return interface_dict
-
+@@ -2119,6 +2144,12 @@
+                     match = re.search(r"(\d+) output errors", line)
+                     counters[interface]["tx_errors"] = int(match.group(1))
+                     counters[interface]["tx_discards"] = -1
++                elif "txload" in line:
++                    # 'reliability 255/255, txload 1/255, rxload 1/255'
++                    match = re.search(r"txload (\d+)\/(\d+), rxload (\d+)\/(\d+)", line)
++                    if match:
++                        counters[interface]["tx_utilization"] = int(match.group(1)) / int(match.group(2))
++                        counters[interface]["rx_utilization"] = int(match.group(3)) / int(match.group(4))
+             for line in sh_int_sum_cmd_out.splitlines():
+                 if interface in line:
+                     # Line is tabular output with columns
+--- a/env/lib/python3.8/site-packages/napalm/junos/junos.py
++++ b/env/lib/python3.8/site-packages/napalm/junos/junos.py
+@@ -375,6 +375,21 @@ class JunOSDriver(NetworkDriver):
+             interface_counters[interface] = {
+                 k: v if v is not None else -1 for k, v in counters
+             }
++
++            interface_counters[interface]['tx_utilization'] = 0
++            interface_counters[interface]['rx_utilization'] = 0
++            if (interface.startswith('ge-')):
++                interface_counters[interface]['tx_utilization'] = interface_counters[interface]['tx_octets_per_second'] * 8 / 1000000000
++                interface_counters[interface]['rx_utilization'] = interface_counters[interface]['rx_octets_per_second'] * 8 / 1000000000
++            if (interface.startswith('xe-')):
++                interface_counters[interface]['tx_utilization'] = interface_counters[interface]['tx_octets_per_second'] * 8 / 10000000000
++                interface_counters[interface]['rx_utilization'] = interface_counters[interface]['rx_octets_per_second'] * 8 / 10000000000
++            if (interface.startswith('et-')):
++                interface_counters[interface]['tx_utilization'] = interface_counters[interface]['tx_octets_per_second'] * 8 / 40000000000
++                interface_counters[interface]['rx_utilization'] = interface_counters[interface]['rx_octets_per_second'] * 8 / 40000000000
++            del interface_counters[interface]['tx_octets_per_second']
++            del interface_counters[interface]['rx_octets_per_second']
++
+         return interface_counters
+ 
+     def get_environment(self):
+--- a/env/lib/python3.8/site-packages/napalm/junos/utils/junos_views.yml
++++ b/env/lib/python3.8/site-packages/napalm/junos/utils/junos_views.yml
+@@ -141,6 +141,8 @@ junos_iface_counter_view:
+   fields_ts:
+     rx_octets: { input-bytes: int }
+     tx_octets: { output-bytes: int }
++    rx_octets_per_second: { input-bps: int }
++    tx_octets_per_second: { output-bps: int }
+ 
+   fields_rxerrs:
+     rx_errors: { input-errors: int }
 +++ a/env/lib/python3.8/site-packages/jnpr/junos/factcache.py
 +++ b/env/lib/python3.8/site-packages/jnpr/junos/factcache.py
 @@ -1,13 +1,14 @@
