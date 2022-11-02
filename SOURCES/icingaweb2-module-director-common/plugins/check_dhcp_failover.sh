@@ -8,7 +8,8 @@ let UNKNOWN=3
 
 # check if failover is enabled
 # grep exits with 0 there is a match and failover is enabled
-_=$(grep -e '^\s*include.*failover\.conf' /etc/dhcp-nmsprime/dhcpd.conf)
+# use cat-pipe-grep because of entry in sudoers
+_=$(/usr/bin/sudo /usr/bin/cat /etc/dhcp-nmsprime/dhcpd.conf | /usr/bin/grep -e '^\s*include.*failover\.conf')
 CODE=$?
 if [ $CODE -eq 1 ]; then
 	echo "DHCPd failover not enabled; skipping check."
@@ -18,8 +19,9 @@ elif [ $CODE -ne 0 ]; then
 	exit $UNKNOWN
 fi
 
-LOCALSTATE=$(omshell < /etc/dhcp-nmsprime/check-failover.cmd | grep local-state | cut -d' ' -f 3)
-PARTNERSTATE=$(omshell < /etc/dhcp-nmsprime/check-failover.cmd | grep partner-state | cut -d' ' -f 3)
+# use cat-pipe-grep because of entry in sudoers
+LOCALSTATE=$(/usr/bin/sudo /usr/bin/cat /etc/dhcp-nmsprime/check-failover.cmd | /usr/bin/omshell | /usr/bin/grep local-state | cut -d' ' -f 3)
+PARTNERSTATE=$(/usr/bin/sudo /usr/bin/cat /etc/dhcp-nmsprime/check-failover.cmd | /usr/bin/omshell | /usr/bin/grep partner-state | cut -d' ' -f 3)
 
 let GLOBALSTATE=$OK
 echo "Local   state: $LOCALSTATE"
