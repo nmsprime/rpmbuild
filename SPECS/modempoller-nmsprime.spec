@@ -1,6 +1,6 @@
 Name: modempoller-nmsprime
 Version: 0.0.3
-Release: 1
+Release: 2
 Summary: A highly efficient modem snmp poller
 
 Group: Applications/Communications
@@ -27,9 +27,14 @@ install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}
 %{_bindir}/%{name}
 
 %changelog
+* Mon Mar 21 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 0.0.3-2
+- Require Postgres DB now
+
 * Wed Mar 09 2022 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.3-1
 - switch SQL client lib from MySQL to PostgreSQL
+
 * Tue Aug 24 2021 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.2-1
 - Rebuild using nmsprime.modem rather than cacti.host
+
 * Mon May 06 2019 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.1-1
 - Initial RPM release
