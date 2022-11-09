@@ -91,11 +91,15 @@ install -d %{buildroot}%{_datadir}/%{name}/ext
 * Tue Aug 08 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.2.9-1
 - Update to 1.2.9-1
 - Change Dependency from rh-node12 to nodejs (nodejs 16 LTS)
+
 * Mon Nov 08 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.8-1
 - Update to 1.2.8-1
+
 * Sun Dec 13 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.3-2
 - Use master to workaround factory reset loop
+
 * Tue Dec 08 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.3-1
 - Update to 1.2.3-1
+
 * Wed May 29 2019 Ole Ernst <ole.ernst@nmsprime.com> - 1.1.3-1
 - Initial RPM release
