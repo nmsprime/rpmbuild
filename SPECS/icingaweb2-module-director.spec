@@ -322,8 +322,6 @@ sed -i "s/vars.pgsql_password = \"<pgsql_icinga2_psw>\"/vars.pgsql_password = \"
 
 systemctl enable icinga2
 systemctl start icinga2
-systemctl enable php80-php-fpm
-systemctl start php80-php-fpm
 systemctl enable icinga-director
 systemctl start icinga-director
 icinga2 feature enable ido-pgsql
@@ -363,7 +361,6 @@ sed -i -e "s/^endpoint = \"<hostname>\"$/endpoint = \"$(hostname)\"/" \
   -e "s/^password = \"<director_api_psw>\"$/password = \"$director_api_psw\"/" /etc/icingaweb2/modules/director/kickstart.ini
 sed -i "s/^password = \"<cmdtransport_api_psw>\"$/password = \"$cmdtransport_api_psw\"/" /etc/icingaweb2/modules/monitoring/commandtransports.ini
 systemctl restart httpd
-systemctl restart php80-php-fpm
 icingacli module enable director
 icingacli director migration run
 echo "127.0.0.1 $(hostname)" >> /etc/hosts
