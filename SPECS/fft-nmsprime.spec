@@ -1,6 +1,6 @@
 Name: fft-nmsprime
 Version: 0.0.1
-Release: 1
+Release: 2
 Summary: A highly efficient FFT used for PNM data
 
 Group: Applications/Communications
@@ -26,5 +26,8 @@ install -Dm755 %{name}/%{name} %{buildroot}%{_bindir}/%{name}
 %{_bindir}/%{name}
 
 %changelog
+* Mon Nov 14 2022 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.1-2
+- Bump for AlmaLinux 9 rebuild
+
 * Mon Aug 19 2020 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.1-1
 - Initial RPM release
