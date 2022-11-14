@@ -2,12 +2,11 @@ cd /opt/
 git clone git@github.com:nmsprime/topologydetector.git topologydetector-nmsprime
 cd topologydetector-nmsprime/
 mkdir env
-source /opt/rh/rh-python38/enable
-python -m venv --system-site-packages env/
+python3 -m venv --system-site-packages env/
 source env/bin/activate
 pip install -r requirements.txt
 patch -p1 -i /home/nmsprime/rpmbuild/SOURCES/lldp.patch
-sed -i 's/from markupsafe import soft_unicode/from markupsafe import soft_str as soft_unicode/' env/lib/python3.8/site-packages/jinja2/{filters,runtime,utils}.py
+sed -i 's/from markupsafe import soft_unicode/from markupsafe import soft_str as soft_unicode/' env/lib/python3.9/site-packages/jinja2/{filters,runtime,utils}.py
 rm -rf .git* diff_* img/ inventory/ LICENSE main.html next_* nornir_config.yml README.md requirements.txt samples/ styles_main_page.css topology.js
 cat << EOF > groups.yaml
 ---
@@ -27,16 +26,14 @@ EOF
 cat << "EOF" > generate_topology.sh
 #!/bin/bash
 
-source /opt/rh/rh-python38/enable
 source /opt/topologydetector-nmsprime/env/bin/activate
 python /opt/topologydetector-nmsprime/generate_topology.py $1 $2
 EOF
 cat << "EOF" > get-ccap-cli-data.sh
 #!/bin/bash
 
-source /opt/rh/rh-python38/enable
 source /opt/topologydetector-nmsprime/env/bin/activate
 python /var/www/nmsprime/modules/CoreMon/Console/scripts/get-ccap-cli-data.py $1
 EOF
 chmod +x generate_topology.sh get-ccap-cli-data.sh
-fpm -s dir -t rpm -v 0.0.1 --architecture all --force --verbose -p /tmp -n topologydetector-nmsprime --description 'An automated topology visualization solution for online Cisco DevNet Marathon Finale. May 2020.' --depends rh-python38 --config-files /opt/topologydetector-nmsprime/groups.yaml /opt/topologydetector-nmsprime/=/opt/topologydetector-nmsprime/
+fpm -s dir -t rpm -v 0.0.1 --architecture all --force --verbose -p /tmp -n topologydetector-nmsprime --description 'An automated topology visualization solution for online Cisco DevNet Marathon Finale. May 2020.' --depends python3 --config-files /opt/topologydetector-nmsprime/groups.yaml /opt/topologydetector-nmsprime/=/opt/topologydetector-nmsprime/

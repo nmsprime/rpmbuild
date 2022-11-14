@@ -1,5 +1,5 @@
---- a/env/lib/python3.8/site-packages/napalm/ios/utils/textfsm_templates/show_lldp_neighbors_detail.tpl
-+++ b/env/lib/python3.8/site-packages/napalm/ios/utils/textfsm_templates/show_lldp_neighbors_detail.tpl
+--- a/env/lib/python3.9/site-packages/napalm/ios/utils/textfsm_templates/show_lldp_neighbors_detail.tpl
++++ b/env/lib/python3.9/site-packages/napalm/ios/utils/textfsm_templates/show_lldp_neighbors_detail.tpl
 @@ -8,7 +8,7 @@
  Value REMOTE_SYSTEM_ENABLE_CAPAB (.*)
  
@@ -9,8 +9,8 @@
    ^Chassis id\s*?[:-]\s+${REMOTE_CHASSIS_ID}
    ^Port id\s*?[:-]\s+${REMOTE_PORT}
    ^Port Description\s*?[:-]\s+${REMOTE_PORT_DESCRIPTION}
---- a/env/lib/python3.8/site-packages/napalm/base/constants.py
-+++ b/env/lib/python3.8/site-packages/napalm/base/constants.py
+--- a/env/lib/python3.9/site-packages/napalm/base/constants.py
++++ b/env/lib/python3.9/site-packages/napalm/base/constants.py
 @@ -70,6 +70,7 @@
  }
  LLDP_CAPAB_TRANFORM_TABLE = {
@@ -19,8 +19,8 @@
      "p": "repeater",
      "b": "bridge",
      "w": "wlan-access-point",
---- a/env/lib/python3.8/site-packages/napalm/ios/ios.py
-+++ b/env/lib/python3.8/site-packages/napalm/ios/ios.py
+--- a/env/lib/python3.9/site-packages/napalm/ios/ios.py
++++ b/env/lib/python3.9/site-packages/napalm/ios/ios.py
 @@ -958,6 +958,13 @@
              if " uptime is " in line:
                  hostname, uptime_str = line.split(" uptime is ")
@@ -93,8 +93,8 @@
              for line in sh_int_sum_cmd_out.splitlines():
                  if interface in line:
                      # Line is tabular output with columns
---- a/env/lib/python3.8/site-packages/napalm/junos/junos.py
-+++ b/env/lib/python3.8/site-packages/napalm/junos/junos.py
+--- a/env/lib/python3.9/site-packages/napalm/junos/junos.py
++++ b/env/lib/python3.9/site-packages/napalm/junos/junos.py
 @@ -375,6 +375,21 @@ class JunOSDriver(NetworkDriver):
              interface_counters[interface] = {
                  k: v if v is not None else -1 for k, v in counters
@@ -117,8 +117,8 @@
          return interface_counters
  
      def get_environment(self):
---- a/env/lib/python3.8/site-packages/napalm/junos/utils/junos_views.yml
-+++ b/env/lib/python3.8/site-packages/napalm/junos/utils/junos_views.yml
+--- a/env/lib/python3.9/site-packages/napalm/junos/utils/junos_views.yml
++++ b/env/lib/python3.9/site-packages/napalm/junos/utils/junos_views.yml
 @@ -141,6 +141,8 @@ junos_iface_counter_view:
    fields_ts:
      rx_octets: { input-bytes: int }
@@ -128,8 +128,8 @@
  
    fields_rxerrs:
      rx_errors: { input-errors: int }
-+++ a/env/lib/python3.8/site-packages/jnpr/junos/factcache.py
-+++ b/env/lib/python3.8/site-packages/jnpr/junos/factcache.py
++++ a/env/lib/python3.9/site-packages/jnpr/junos/factcache.py
++++ b/env/lib/python3.9/site-packages/jnpr/junos/factcache.py
 @@ -1,13 +1,14 @@
 -import collections
  import warnings
