@@ -1,5 +1,5 @@
 cd /opt/
-git clone https://github.com/iDebugAll/devnet_marathon_endgame.git topologydetector-nmsprime
+git clone git@github.com:nmsprime/topologydetector.git topologydetector-nmsprime
 cd topologydetector-nmsprime/
 mkdir env
 source /opt/rh/rh-python38/enable
