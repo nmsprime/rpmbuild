@@ -23,6 +23,7 @@ global:
   scrape_interval: 1m
   evaluation_interval: 1m
   scrape_timeout: 1m
+
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
@@ -47,8 +48,10 @@ remote_write:
 remote_read:
   - url: "http://localhost:9201/read"
     read_recent: true
+
 rule_files:
   - 'prometheus_rules.yml'
+
 alerting:
   alertmanagers:
   - static_configs:
