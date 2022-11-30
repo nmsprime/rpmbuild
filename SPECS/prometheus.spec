@@ -30,6 +30,18 @@ scrape_configs:
   - job_name: 'telegraf'
     static_configs:
     - targets: ['localhost:9273']
+  - job_name: 'nmsprime'
+    static_configs:
+    - targets: ['localhost:8080']
+    metrics_path: 'metrics/120'
+    scheme: 'https'
+    scrape_interval: 2h
+    basic_auth:
+        username:
+        password:
+    tls_config:
+        insecure_skip_verify: true
+
 remote_write:
   - url: "http://localhost:9201/write"
 remote_read:
