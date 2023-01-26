@@ -7,7 +7,7 @@ Group: Applications/Communications
 License: GPLv3
 BuildArch: noarch
 URL: https://www.nmsprime.com
-Source1: https://packages.icinga.com/epel/icinga-rpm-release-7-latest.noarch.rpm
+Source1: https://packages.icinga.com/centos/icinga-rpm-release-7-latest.noarch.rpm
 Source2: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 
 %description
