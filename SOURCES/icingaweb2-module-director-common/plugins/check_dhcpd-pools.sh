@@ -80,9 +80,9 @@ for file in /etc/dhcp-nmsprime/cmts_gws/*.conf; do
 				status='CRITICAL'
 				exit=2
 			fi
-
-			text+=" '$net ($(basename "$file"), #left: ${stats[1]}/${stats[2]})'=${stats[0]}%;$warn;$crit"
 		fi
+
+		text+=" '$net ($(basename "$file"), #left: ${stats[1]}/${stats[2]})'=${stats[0]}%;$warn;$crit"
 	done
 	rm -rf "$dir"
 done
