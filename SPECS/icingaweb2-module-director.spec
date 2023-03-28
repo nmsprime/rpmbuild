@@ -156,8 +156,8 @@ WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.
     (8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),
     (9,1,1,'${port}','vars.port',9,NULL,'override'),
     (10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override'),
-    (11,1,1,'${parent_id_name}','vars.parent_id_name',10,NULL,'override'),
-    (12,1,1,'${parent_type}','vars.parent_type',10,NULL,'override')
+    (11,1,1,'${parent_id_name}','vars.parent_id_name',11,NULL,'override'),
+    (12,1,1,'${parent_type}','vars.parent_type',12,NULL,'override')
   ON CONFLICT (id) DO UPDATE SET
     id = excluded.id,
     rule_id = excluded.rule_id,
@@ -335,8 +335,8 @@ WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.
     (8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),
     (9,1,1,'${port}','vars.port',9,NULL,'override'),
     (10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override'),
-    (11,1,1,'${parent_id_name}','vars.parent_id_name',10,NULL,'override'),
-    (11,1,1,'${parent_type}','vars.parent_type',10,NULL,'override');
+    (11,1,1,'${parent_id_name}','vars.parent_id_name',11,NULL,'override'),
+    (12,1,1,'${parent_type}','vars.parent_type',12,NULL,'override');
   INSERT INTO director_job VALUES (1,'nmsprime.netelement','Icinga\Module\Director\Job\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL), (2,'syncHosts','Icinga\Module\Director\Job\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL), (3,'deploy','Icinga\Module\Director\Job\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
   INSERT INTO director_job_setting VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
 EOF
