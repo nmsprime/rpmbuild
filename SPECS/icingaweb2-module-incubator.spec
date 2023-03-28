@@ -1,6 +1,6 @@
 Name: icingaweb2-module-incubator
-Version: 0.6.0
-Release: 2
+Version: 0.20.0
+Release: 1
 Summary: Bleeding edge Icinga Web 2 libraries
 
 Group: Applications/Communications
@@ -28,6 +28,9 @@ systemctl restart icinga2.service
 %{_datarootdir}/icingaweb2/modules/incubator/*
 
 %changelog
+* Tue Mar 21 2023 Christian Schramm <christian.schramm@nmsprime.com> - 0.20.0-1
+- update to version 0.20.0
+
 * Fri Jan 07 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 0.6.0-2
 - Add dependencies
 
