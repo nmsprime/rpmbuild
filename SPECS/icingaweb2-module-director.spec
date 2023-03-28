@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
-Version: 1.8.1
-Release: 7
+Version: 1.10.2
+Release: 1
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -368,6 +368,9 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Tue Mar 21 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.10.2-1
+- update to version 1.10.2
+
 * Thu Mar 10 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 1.8.1-7
 - use postgres DB
 
