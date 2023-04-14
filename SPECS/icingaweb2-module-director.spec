@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
-Version: 1.8.1
-Release: 7
+Version: 1.10.2
+Release: 1
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -132,14 +132,16 @@ done
 
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
   UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, ''_'', NE.name) AS id,
+  CONCAT(NP.id, ''_'', NP.name) AS parent_id_name,
+  NP.base_type_id as parent_type,
   NE.name, NE.parent_id AS parent,
+  NE.ip, NE.port,
   CASE WHEN NE.community_ro <> '''' THEN NE.community_ro ELSE (SELECT ro_community FROM nmsprime.provbase WHERE deleted_at IS NULL) END AS ro_community,
-  CASE WHEN NE.ip <> '''' THEN SPLIT_PART(NE.ip, '':'', 1) ELSE ''127.0.0.1'' END AS ip,
-  CASE WHEN POSITION(NE.ip IN '':'') > 0 THEN SPLIT_PART(NE.ip, '':'', -1) ELSE NULL END AS port,
   CASE WHEN NT.base_type_id = 2 THEN 1 ELSE NT.base_type_id END AS netelementtype_id, NT.vendor,
   CASE WHEN NE.id IN (SELECT DISTINCT netelement_id FROM nmsprime.modem WHERE modem.deleted_at IS NULL) THEN 1 ELSE 0 END AS isbubble
-FROM nmsprime.netelement AS NE JOIN nmsprime.netelement AS NP ON NP.id = NE.parent_id
+FROM nmsprime.netelement AS NE
   JOIN nmsprime.netelementtype AS NT ON NE.netelementtype_id = NT.id
+  LEFT JOIN nmsprime.netelement AS NP ON NE.parent_id = NP.id
 WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'
   WHERE source_id = 1 and setting_name = 'query';
 
@@ -153,7 +155,9 @@ WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.
     (7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),
     (8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),
     (9,1,1,'${port}','vars.port',9,NULL,'override'),
-    (10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override')
+    (10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override'),
+    (11,1,1,'${parent_id_name}','vars.parent_id_name',11,NULL,'override'),
+    (12,1,1,'${parent_type}','vars.parent_type',12,NULL,'override')
   ON CONFLICT (id) DO UPDATE SET
     id = excluded.id,
     rule_id = excluded.rule_id,
@@ -305,20 +309,34 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
     ;
 
   INSERT INTO import_source_setting VALUES (1, 'query', 'SELECT CONCAT(NE.id, ''_'', NE.name) AS id,
+  CONCAT(NP.id, ''_'', NP.name) AS parent_id_name,
+  NP.base_type_id as parent_type,
   NE.name, NE.parent_id AS parent,
+  NE.ip, NE.port,
   CASE WHEN NE.community_ro <> '''' THEN NE.community_ro ELSE (SELECT ro_community FROM nmsprime.provbase WHERE deleted_at IS NULL) END AS ro_community,
-  CASE WHEN NE.ip <> '''' THEN SPLIT_PART(NE.ip, '':'', 1) ELSE ''127.0.0.1'' END AS ip,
-  CASE WHEN POSITION(NE.ip IN '':'') > 0 THEN SPLIT_PART(NE.ip, '':'', -1) ELSE NULL END AS port,
   CASE WHEN NT.base_type_id = 2 THEN 1 ELSE NT.base_type_id END AS netelementtype_id, NT.vendor,
   CASE WHEN NE.id IN (SELECT DISTINCT netelement_id FROM nmsprime.modem WHERE modem.deleted_at IS NULL) THEN 1 ELSE 0 END AS isbubble
-FROM nmsprime.netelement AS NE JOIN nmsprime.netelement AS NP ON NP.id = NE.parent_id
+FROM nmsprime.netelement AS NE
   JOIN nmsprime.netelementtype AS NT ON NE.netelementtype_id = NT.id
-WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL'),
+  LEFT JOIN nmsprime.netelement AS NP ON NE.parent_id = NP.id
+WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'),
   (1,'resource','nmsprime');
 
   INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
   INSERT INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,'unknown',NULL,NULL,NULL);
-  INSERT INTO sync_property VALUES (1,1,1,'generic-host-director','import',1,NULL,'override'),(2,1,1,'${ip}','address',2,NULL,'override'),(3,1,1,'${name}','display_name',3,NULL,'override'),(4,1,1,'${parent}','vars.parents',4,NULL,'override'),(5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),(6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),(7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),(8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),(9,1,1,'${port}','vars.port',9,NULL,'override'),(10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override');
+  INSERT INTO sync_property VALUES
+    (1,1,1,'generic-host-director','import',1,NULL,'override'),
+    (2,1,1,'${ip}','address',2,NULL,'override'),
+    (3,1,1,'${name}','display_name',3,NULL,'override'),
+    (4,1,1,'${parent}','vars.parents',4,NULL,'override'),
+    (5,1,1,'${netelementtype_id}','vars.netelementtype_id',5,NULL,'override'),
+    (6,1,1,'${ro_community}','vars.ro_community',6,NULL,'override'),
+    (7,1,1,'${netelementtype_id}','groups',7,NULL,'override'),
+    (8,1,1,'${vendor}','vars.vendor',8,NULL,'override'),
+    (9,1,1,'${port}','vars.port',9,NULL,'override'),
+    (10,1,1,'${isbubble}','vars.isBubble',10,NULL,'override'),
+    (11,1,1,'${parent_id_name}','vars.parent_id_name',11,NULL,'override'),
+    (12,1,1,'${parent_type}','vars.parent_type',12,NULL,'override');
   INSERT INTO director_job VALUES (1,'nmsprime.netelement','Icinga\Module\Director\Job\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL), (2,'syncHosts','Icinga\Module\Director\Job\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL), (3,'deploy','Icinga\Module\Director\Job\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
   INSERT INTO director_job_setting VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
 EOF
@@ -350,6 +368,9 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Tue Mar 21 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.10.2-1
+- update to version 1.10.2
+
 * Thu Mar 10 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 1.8.1-7
 - use postgres DB
 
