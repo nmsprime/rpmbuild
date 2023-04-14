@@ -58,10 +58,12 @@ for file in /etc/dhcp-nmsprime/cmts_gws/*.conf; do
 			grep -o "${line[1]},${line[2]}.*" <<< "$pools" >> "$tmp"
 		else
 			# append current range to global range file (one for each ippool type)
-			cat "$tmp" >> "$dir/$(cut -d'"' -f2 <<< "$line")"
+			if [[ "$line" != 'deny all clients' ]]; then
+				cat "$tmp" >> "$dir/$(cut -d'"' -f2 <<< "$line")"
+			fi
 			truncate -s 0 "$tmp"
 		fi
-	done < <(grep 'range\|allow members of' "$file" | sed 's/;$//')
+	done < <(grep 'range\|allow members of\|deny all clients' "$file" | sed 's/;$//')
 
 	for file in "$dir"/*; do
 		# skip if file doesn't exist or is empty
@@ -78,9 +80,9 @@ for file in /etc/dhcp-nmsprime/cmts_gws/*.conf; do
 				status='CRITICAL'
 				exit=2
 			fi
-
-			text+=" '$net ($(basename "$file"), #left: ${stats[1]}/${stats[2]})'=${stats[0]}%;$warn;$crit"
 		fi
+
+		text+=" '$net ($(basename "$file"), #left: ${stats[1]}/${stats[2]})'=${stats[0]}%;$warn;$crit"
 	done
 	rm -rf "$dir"
 done

@@ -188,7 +188,7 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery"
 done
 
 grep -q 'http_port' /etc/icinga2/conf.d/hosts.conf || sed -i 's|http_ssl = "true"|http_ssl = "true"\n    http_port = "8080"|' /etc/icinga2/conf.d/hosts.conf
-grep -q 'vars.procs_warning' /etc/icinga2/conf.d/hosts.conf || sed -i '/import "generic-host"/a\ \ vars.procs_warning = "300"' /etc/icinga2/conf.d/hosts.conf
+grep -q 'vars.procs_warning' /etc/icinga2/conf.d/hosts.conf || sed -i '/import "generic-host"/a\ \ vars.procs_warning = "500"' /etc/icinga2/conf.d/hosts.conf
 
 systemctl daemon-reload
 systemctl restart icinga2
