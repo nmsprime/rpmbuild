@@ -61,11 +61,11 @@ EOF
 cat << EOF > grafana.repo
 [grafana]
 name=grafana
-baseurl=https://packages.grafana.com/oss/rpm
+baseurl=https://rpm.grafana.com
 repo_gpgcheck=1
 enabled=1
 gpgcheck=1
-gpgkey=https://packages.grafana.com/gpg.key
+gpgkey=https://rpm.grafana.com/gpg.key
 sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 EOF
@@ -117,6 +117,7 @@ rm -rf ./usr
 %changelog
 * Mon Apr 24 2023 Christian Schramm <christian.schramm@nmsprime.com> - 3.2.0-1
 - Add Telegraf repositories
+- Update Grafana repo urls
 
 * Wed Oct 27 2021 Christian Schramm <christian.schramm@nmsprime.com> - 3.1.0-1
 - Add PHP 8 repositories
