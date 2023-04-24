@@ -1,5 +1,5 @@
 Name: nmsprime-repos
-Version: 3.1.0
+Version: 3.2.0
 Release: 1
 Summary: NMS Prime and dependency RPM repos
 
@@ -79,6 +79,16 @@ gpgcheck=1
 gpgkey=https://rpms.remirepo.net/RPM-GPG-KEY-remi
 EOF
 
+cat << EOF > influxdb.repo
+[influxdb]
+name = InfluxData Repository - Stable
+baseurl = https://repos.influxdata.com/stable/\$basearch/main
+enabled = 1
+gpgcheck = 1
+gpgkey = https://repos.influxdata.com/influxdata-archive_compat.key
+EOF
+
+
 %install
 install -Dm 644 nmsprime-os.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime-os.repo
 install -Dm 644 nmsprime-prime.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime-prime.repo
@@ -105,6 +115,9 @@ rm -rf ./usr
 %config(noreplace) %{_sysconfdir}/*
 
 %changelog
+* Mon Apr 24 2023 Christian Schramm <christian.schramm@nmsprime.com> - 3.2.0-1
+- Add Telegraf repositories
+
 * Wed Oct 27 2021 Christian Schramm <christian.schramm@nmsprime.com> - 3.1.0-1
 - Add PHP 8 repositories
 
