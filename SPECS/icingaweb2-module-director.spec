@@ -114,7 +114,9 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql director -c "CREATE EXTENSION pgcrypto
 icingacli director migration run
 
 read -r -a credentials <<< $(grep '^ROOT_DB_USERNAME\|^ROOT_DB_PASSWORD=' /etc/nmsprime/env/root.env | cut -d '=' -f2)
-mysql -u "${credentials[0]}" -p"${credentials[1]}" --exec='Create user psqlconverter; GRANT select ON *.* TO psqlconverter;'
+if ! mysql -u "${credentials[0]}" -p"${credentials[1]}" -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = 'psqlconverter')"; then
+  mysql -u "${credentials[0]}" -p"${credentials[1]}" --exec='Create user psqlconverter; GRANT select ON *.* TO psqlconverter;'
+fi
 
 # Convert DBs (copy data) and Set user permissions
 for db in icinga2 icingaweb2 director; do
