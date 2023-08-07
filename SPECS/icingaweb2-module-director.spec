@@ -109,7 +109,7 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 << EOF
   ALTER TABLE icinga_servicestatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
 EOF
 
-sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/icingaweb2/schema/pgsql.schema.sql
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
 icingacli director migration run
 
@@ -258,7 +258,7 @@ icinga2 api setup
 
 # Icingaweb2
 sudo -u postgres createdb icingaweb2
-sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/icingaweb2/schema/pgsql.schema.sql
 echo "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');" | sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 -c "
   CREATE USER icingaweb2user PASSWORD '$sql_icingaweb2_psw';
@@ -325,7 +325,7 @@ WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.
   (1,'resource','nmsprime');
 
   INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
-  INSERT INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,'unknown',NULL,NULL,NULL);
+  INSERT INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,NULL,'unknown',NULL,NULL,NULL);
   INSERT INTO sync_property VALUES
     (1,1,1,'generic-host-director','import',1,NULL,'override'),
     (2,1,1,'${ip}','address',2,NULL,'override'),
