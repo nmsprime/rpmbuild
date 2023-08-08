@@ -88,7 +88,6 @@ gpgcheck = 1
 gpgkey = https://repos.influxdata.com/influxdata-archive_compat.key
 EOF
 
-
 %install
 install -Dm 644 nmsprime-os.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime-os.repo
 install -Dm 644 nmsprime-prime.repo %{buildroot}%{_sysconfdir}/yum.repos.d/nmsprime-prime.repo
@@ -96,6 +95,7 @@ install -Dm 644 mongodb-org-4.4.repo %{buildroot}%{_sysconfdir}/yum.repos.d/mong
 install -Dm 644 timescale_timescaledb.repo %{buildroot}%{_sysconfdir}/yum.repos.d/timescale_timescaledb.repo
 install -Dm 644 grafana.repo %{buildroot}%{_sysconfdir}/yum.repos.d/grafana.repo
 install -Dm 644 remi-safe.repo %{buildroot}%{_sysconfdir}/yum.repos.d/remi-safe.repo
+install -Dm 644 influxdb.repo %{buildroot}%{_sysconfdir}/yum.repos.d/influxdb.repo
 install -Dm 644 ./etc/yum.repos.d/pgdg-redhat-all.repo %{buildroot}%{_sysconfdir}/yum.repos.d/pgdg-redhat-all.repo
 install -Dm 644 ./etc/yum.repos.d/ICINGA-release.repo %{buildroot}%{_sysconfdir}/yum.repos.d/ICINGA-release.repo
 install -Dm 644 ./etc/pki/rpm-gpg/RPM-GPG-KEY-ICINGA %{buildroot}%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-ICINGA
@@ -107,6 +107,7 @@ rm mongodb-org-4.4.repo
 rm timescale_timescaledb.repo
 rm grafana.repo
 rm remi-safe.repo
+rm influxdb.repo
 rm -rf ./etc
 rm -rf ./usr
 
