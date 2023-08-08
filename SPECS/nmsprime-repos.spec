@@ -72,7 +72,7 @@ EOF
 
 cat << EOF > remi-safe.repo
 [remi-safe]
-name=Safe Remi's RPM repository for Enterprise Linux 7 - $basearch
+name=Safe Remis RPM repository for Enterprise Linux 7 - $basearch
 mirrorlist=http://cdn.remirepo.net/enterprise/7/safe/mirror
 enabled=1
 gpgcheck=1
