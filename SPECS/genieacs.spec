@@ -1,5 +1,5 @@
 Name: genieacs
-Version: 1.2.8
+Version: 1.2.9
 Release: 1
 Summary: A fast and lightweight TR-069 Auto Configuration Server (ACS)
 
@@ -7,8 +7,8 @@ Group: Applications/Communications
 License: AGPLv3
 URL: https://%{name}.com/
 
-BuildRequires: rh-nodejs12-npm
-Requires: mongodb-org-server, rh-nodejs12
+BuildRequires: npm
+Requires: mongodb-org-server, nodejs
 
 %description
 GenieACS is an open source TR-069 remote management solution with advanced
@@ -24,7 +24,7 @@ After=network.target
 [Service]
 User=nobody
 EnvironmentFile=%{_sysconfdir}/%{name}/%{name}.env
-ExecStart=/usr/bin/scl enable rh-nodejs12 '/bin/%{name}-${service}'
+ExecStart=/bin/%{name}-${service}
 Restart=always
 
 [Install]
@@ -59,7 +59,6 @@ cat << EOF >> %{name}.log
 EOF
 
 %install
-source /opt/rh/rh-nodejs12/enable
 cache=$(mktemp -d)
 npm install %{name}@%{version} -g --cache "${cache}" --prefix %{buildroot}
 rm -rf "${cache}"
@@ -89,6 +88,9 @@ install -d %{buildroot}%{_datadir}/%{name}/ext
 %attr(755, nobody, nobody) %{_localstatedir}/log/%{name}
 
 %changelog
+* Thue Aug 08 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.2.9-1
+- Update to 1.2.9-1
+- Change Dependency from rh-node12 to nodejs (nodejs 16 LTS)
 * Mon Nov 08 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.8-1
 - Update to 1.2.8-1
 * Sun Dec 13 2020 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.3-2
