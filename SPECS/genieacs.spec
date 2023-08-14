@@ -88,7 +88,7 @@ install -d %{buildroot}%{_datadir}/%{name}/ext
 %attr(755, nobody, nobody) %{_localstatedir}/log/%{name}
 
 %changelog
-* Thue Aug 08 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.2.9-1
+* Tue Aug 08 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.2.9-1
 - Update to 1.2.9-1
 - Change Dependency from rh-node12 to nodejs (nodejs 16 LTS)
 * Mon Nov 08 2021 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.8-1
