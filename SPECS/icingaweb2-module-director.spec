@@ -99,6 +99,16 @@ for db in icinga2 icingaweb2 director; do
   user=${db}user
   sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "CREATE USER $user PASSWORD '$psw'"
   echo $user
+
+  if [ "$db" = 'icinga2' ]; then
+    sed -i -e 's|//user =.*|user = "icinga2user"|' \
+      -e "s|//password =.*|password = \"$psw\"|" \
+      -e 's|//host|host|' \
+      -e 's|//database =.*|database = "icinga2"|' /etc/icinga2/features-available/ido-pgsql.conf
+    chown icinga:icinga /etc/icinga2/features-available/ido-pgsql.conf
+    icinga2 feature enable ido-pgsql
+    icinga2 feature disable ido-mysql
+  fi
 done
 
 # Create DB Schema
