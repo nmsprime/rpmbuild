@@ -105,6 +105,33 @@ for db in icinga2 icingaweb2 director; do
       -e "s|//password =.*|password = \"$psw\"|" \
       -e 's|//host|host|' \
       -e 's|//database =.*|database = "icinga2"|' /etc/icinga2/features-available/ido-pgsql.conf
+
+    grep -q 'cleanup' /etc/icinga2/features-available/ido-pgsql.conf
+    if [ $? -ne 0 ]; then
+      sed -i '/^}$/d' /etc/icinga2/features-available/ido-pgsql.conf
+      cat << EOF >> /etc/icinga2/features-available/ido-pgsql.conf
+
+  cleanup = {
+    acknowledgements_age = 730d
+    commenthistory_age = 730d
+    contactnotifications_age = 730d
+    contactnotificationmethods_age = 730d
+    downtimehistory_age = 730d
+    eventhandlers_age = 730d
+    externalcommands_age = 730d
+    flappinghistory_age = 730d
+    hostchecks_age = 730d
+    logentries_age = 730d
+    notifications_age = 1d
+    processevents_age = 730d
+    statehistory_age = 730d
+    servicechecks_age = 730d
+    systemcommands_age = 730d
+  }
+}
+EOF
+    fi
+
     chown icinga:icinga /etc/icinga2/features-available/ido-pgsql.conf
     icinga2 feature enable ido-pgsql
     icinga2 feature disable ido-mysql
@@ -388,6 +415,7 @@ done
 * Tue Sep 12 2023 Ole Ernst <ole.ernst@nmsprime.com> - 1.10.2-2
 - disable mysql and enable pgsql IDO feature during migration
 - adjust check_command_id of generic-host-director to use the hostalive one (since the IDs change during migration)
+- add database cleanup intervals
 
 * Tue Mar 21 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.10.2-1
 - update to version 1.10.2
