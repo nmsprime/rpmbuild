@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.10.2
-Release: 1
+Release: 2
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -179,6 +179,11 @@ WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.
     priority = excluded.priority,
     filter_expression = excluded.filter_expression,
     merge_policy = excluded.merge_policy;
+
+  UPDATE icinga_host
+  SET check_command_id = icinga_command.id
+  FROM (SELECT id FROM icinga_command WHERE object_name='hostalive') AS icinga_command
+  WHERE object_name = 'generic-host-director';
 EOF
 
 fi
@@ -380,6 +385,10 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Tue Sep 12 2023 Ole Ernst <ole.ernst@nmsprime.com> - 1.10.2-2
+- disable mysql and enable pgsql IDO feature during migration
+- adjust check_command_id of generic-host-director to use the hostalive one (since the IDs change during migration)
+
 * Tue Mar 21 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.10.2-1
 - update to version 1.10.2
 
