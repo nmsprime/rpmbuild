@@ -170,18 +170,45 @@ for db in icinga2 icingaweb2 director; do
 done
 
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
-  UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, ''_'', NE.name) AS id,
-  CONCAT(NP.id, ''_'', NP.name) AS parent_id_name,
-  NP.base_type_id as parent_type,
-  NE.name, NE.parent_id AS parent,
-  NE.ip, NE.port,
-  CASE WHEN NE.community_ro <> '''' THEN NE.community_ro ELSE (SELECT ro_community FROM nmsprime.provbase WHERE deleted_at IS NULL) END AS ro_community,
-  CASE WHEN NT.base_type_id = 2 THEN 1 ELSE NT.base_type_id END AS netelementtype_id, NT.vendor,
-  CASE WHEN NE.id IN (SELECT DISTINCT netelement_id FROM nmsprime.modem WHERE modem.deleted_at IS NULL) THEN 1 ELSE 0 END AS isbubble
-FROM nmsprime.netelement AS NE
-  JOIN nmsprime.netelementtype AS NT ON NE.netelementtype_id = NT.id
-  LEFT JOIN nmsprime.netelement AS NP ON NE.parent_id = NP.id
-WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'
+  UPDATE import_source_setting set setting_value = 'SELECT
+  CONCAT(NE.id, ''_'', NE.name) AS id,
+  NE.name,
+  NE.parent_id AS parent,
+  CASE
+    WHEN (NE.community_ro <> '''')
+    THEN NE.community_ro
+    ELSE (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)
+  END
+  AS ro_community,
+  CASE
+    WHEN position('':'' IN NE.ip) > 0 THEN SUBSTRING(NE.ip FROM 1 FOR position('':'' IN NE.ip) - 1)
+    WHEN (NE.ip <> '''') THEN NE.ip
+    ELSE ''127.0.0.1''
+  END
+  AS ip,
+  CASE
+    WHEN position('':'' IN NE.ip) > 0
+    THEN substring(NE.ip FROM position('':'' IN NE.ip) + 1)
+    ELSE NULL
+  END
+  AS port,
+  CASE
+    WHEN NT.base_type_id = 2 THEN 1
+    WHEN NT.base_type_id = 9 THEN 8
+    ELSE NT.base_type_id
+  END
+  AS netelementtype_id,
+  NT.vendor,
+  CASE
+    WHEN NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL)
+    THEN 1
+    ELSE 0
+  END
+  AS isbubble
+FROM netelement AS NE
+  JOIN netelement AS NP ON NP.id = NE.parent_id
+  JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
+WHERE NE.netelementtype_id >= 2 AND NE.netelementtype_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'
   WHERE source_id = 1 and setting_name = 'query';
 
   INSERT INTO sync_property (id, rule_id, source_id, source_expression, destination_field, priority, filter_expression, merge_policy) VALUES
@@ -352,18 +379,45 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
       description = excluded.description;
     ;
 
-  INSERT INTO import_source_setting VALUES (1, 'query', 'SELECT CONCAT(NE.id, ''_'', NE.name) AS id,
-  CONCAT(NP.id, ''_'', NP.name) AS parent_id_name,
-  NP.base_type_id as parent_type,
-  NE.name, NE.parent_id AS parent,
-  NE.ip, NE.port,
-  CASE WHEN NE.community_ro <> '''' THEN NE.community_ro ELSE (SELECT ro_community FROM nmsprime.provbase WHERE deleted_at IS NULL) END AS ro_community,
-  CASE WHEN NT.base_type_id = 2 THEN 1 ELSE NT.base_type_id END AS netelementtype_id, NT.vendor,
-  CASE WHEN NE.id IN (SELECT DISTINCT netelement_id FROM nmsprime.modem WHERE modem.deleted_at IS NULL) THEN 1 ELSE 0 END AS isbubble
-FROM nmsprime.netelement AS NE
-  JOIN nmsprime.netelementtype AS NT ON NE.netelementtype_id = NT.id
-  LEFT JOIN nmsprime.netelement AS NP ON NE.parent_id = NP.id
-WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'),
+  INSERT INTO import_source_setting VALUES (1, 'query', 'SELECT
+  CONCAT(NE.id, ''_'', NE.name) AS id,
+  NE.name,
+  NE.parent_id AS parent,
+  CASE
+    WHEN (NE.community_ro <> '''')
+    THEN NE.community_ro
+    ELSE (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)
+  END
+  AS ro_community,
+  CASE
+    WHEN position('':'' IN NE.ip) > 0 THEN SUBSTRING(NE.ip FROM 1 FOR position('':'' IN NE.ip) - 1)
+    WHEN (NE.ip <> '''') THEN NE.ip
+    ELSE ''127.0.0.1''
+  END
+  AS ip,
+  CASE
+    WHEN position('':'' IN NE.ip) > 0
+    THEN substring(NE.ip FROM position('':'' IN NE.ip) + 1)
+    ELSE NULL
+  END
+  AS port,
+  CASE
+    WHEN NT.base_type_id = 2 THEN 1
+    WHEN NT.base_type_id = 9 THEN 8
+    ELSE NT.base_type_id
+  END
+  AS netelementtype_id,
+  NT.vendor,
+  CASE
+    WHEN NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL)
+    THEN 1
+    ELSE 0
+  END
+  AS isbubble
+FROM netelement AS NE
+  JOIN netelement AS NP ON NP.id = NE.parent_id
+  JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
+WHERE NE.netelementtype_id >= 2 AND NE.netelementtype_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'),
   (1,'resource','nmsprime');
 
   INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
