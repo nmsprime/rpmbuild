@@ -82,6 +82,7 @@ echo "LOAD DATABASE
   FROM mysql://psqlconverter@localhost/<db>
   INTO postgresql:///<db>
   WITH data only, batch rows = 5000, prefetch rows = 5000
+  EXCLUDING TABLE NAMES MATCHING 'icinga_dbversion'
   CAST
     type tinyint to smallint
   BEFORE LOAD DO \$\$ ALTER SCHEMA public RENAME TO <db>; \$\$
