@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
-Version: 1.10.2
-Release: 2
+Version: 1.11.0
+Release: 1
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -469,6 +469,11 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Wed Oct 18 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.11.0-4
+- update to version 1.11.0
+- adjust icinga hostgroup query
+- reformat Netelement query
+
 * Tue Sep 12 2023 Ole Ernst <ole.ernst@nmsprime.com> - 1.10.2-2
 - disable mysql and enable pgsql IDO feature during migration
 - adjust check_command_id of generic-host-director to use the hostalive one (since the IDs change during migration)
