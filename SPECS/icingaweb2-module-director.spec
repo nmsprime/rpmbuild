@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.11.0
-Release: 2
+Release: 3
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -242,6 +242,8 @@ WHERE NE.base_type_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'
   SET check_command_id = icinga_command.id, uuid = decode(replace(gen_random_uuid()::text, '-', ''), 'hex')
   FROM (SELECT id FROM icinga_command WHERE object_name='hostalive') AS icinga_command
   WHERE object_name = 'generic-host-director';
+
+  UPDATE icinga_host SET uuid = decode(replace(gen_random_uuid()::text, '-', ''), 'hex') where uuid IS NULL;
 EOF
 
 fi
@@ -432,6 +434,8 @@ WHERE NE.base_type_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'),
     (12,1,1,'${parent_type}','vars.parent_type',12,NULL,'override');
   INSERT INTO director_job VALUES (1,'nmsprime.netelement','Icinga\Module\Director\Job\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL), (2,'syncHosts','Icinga\Module\Director\Job\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL), (3,'deploy','Icinga\Module\Director\Job\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
   INSERT INTO director_job_setting VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
+
+  UPDATE icinga_host SET uuid = decode(replace(gen_random_uuid()::text, '-', ''), 'hex') where uuid IS NULL;
 EOF
 
 nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
