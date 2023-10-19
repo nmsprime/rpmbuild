@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.11.0
-Release: 1
+Release: 2
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
