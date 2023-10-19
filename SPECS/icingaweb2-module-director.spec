@@ -170,14 +170,20 @@ for db in icinga2 icingaweb2 director; do
     GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $user;"
 done
 
+if icingacli director migration pending ; then
+  echo "Running Icinga Migrations"
+  icingacli director migration run
+else
+  echo "No Migration Necessary"
+fi
+
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
   UPDATE import_source_setting set setting_value = 'SELECT
   CONCAT(NE.id, ''_'', NE.name) AS id,
   NE.name,
   NE.parent_id AS parent,
   CASE
-    WHEN (NE.community_ro <> '''')
-    THEN NE.community_ro
+    WHEN (NE.community_ro <> '''') THEN NE.community_ro
     ELSE (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)
   END
   AS ro_community,
@@ -188,28 +194,25 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
   END
   AS ip,
   CASE
-    WHEN position('':'' IN NE.ip) > 0
-    THEN substring(NE.ip FROM position('':'' IN NE.ip) + 1)
+    WHEN position('':'' IN NE.ip) > 0 THEN substring(NE.ip FROM position('':'' IN NE.ip) + 1)
     ELSE NULL
   END
   AS port,
   CASE
-    WHEN NT.base_type_id = 2 THEN 1
-    WHEN NT.base_type_id = 9 THEN 8
-    ELSE NT.base_type_id
+    WHEN NE.base_type_id = 2 THEN 1
+    WHEN NE.base_type_id = 9 THEN 8
+    ELSE NE.base_type_id
   END
   AS netelementtype_id,
   NT.vendor,
   CASE
-    WHEN NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL)
-    THEN 1
+    WHEN NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL) THEN 1
     ELSE 0
   END
   AS isbubble
 FROM netelement AS NE
-  JOIN netelement AS NP ON NP.id = NE.parent_id
   JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
-WHERE NE.netelementtype_id >= 2 AND NE.netelementtype_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'
+WHERE NE.base_type_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'
   WHERE source_id = 1 and setting_name = 'query';
 
   INSERT INTO sync_property (id, rule_id, source_id, source_expression, destination_field, priority, filter_expression, merge_policy) VALUES
@@ -236,7 +239,7 @@ WHERE NE.netelementtype_id >= 2 AND NE.netelementtype_id NOT IN (11, 12, 13, 14)
     merge_policy = excluded.merge_policy;
 
   UPDATE icinga_host
-  SET check_command_id = icinga_command.id
+  SET check_command_id = icinga_command.id, uuid = decode(replace(gen_random_uuid()::text, '-', ''), 'hex')
   FROM (SELECT id FROM icinga_command WHERE object_name='hostalive') AS icinga_command
   WHERE object_name = 'generic-host-director';
 EOF
@@ -244,12 +247,6 @@ EOF
 fi
 # end of DB switch
 
-if icingacli director migration pending ; then
-  echo "Running Icinga Migrations"
-  icingacli director migration run
-else
-  echo "No Migration Necessary"
-fi
 
 nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
 nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
@@ -386,8 +383,7 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
   NE.name,
   NE.parent_id AS parent,
   CASE
-    WHEN (NE.community_ro <> '''')
-    THEN NE.community_ro
+    WHEN (NE.community_ro <> '''') THEN NE.community_ro
     ELSE (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)
   END
   AS ro_community,
@@ -398,28 +394,25 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
   END
   AS ip,
   CASE
-    WHEN position('':'' IN NE.ip) > 0
-    THEN substring(NE.ip FROM position('':'' IN NE.ip) + 1)
+    WHEN position('':'' IN NE.ip) > 0 THEN substring(NE.ip FROM position('':'' IN NE.ip) + 1)
     ELSE NULL
   END
   AS port,
   CASE
-    WHEN NT.base_type_id = 2 THEN 1
-    WHEN NT.base_type_id = 9 THEN 8
-    ELSE NT.base_type_id
+    WHEN NE.base_type_id = 2 THEN 1
+    WHEN NE.base_type_id = 9 THEN 8
+    ELSE NE.base_type_id
   END
   AS netelementtype_id,
   NT.vendor,
   CASE
-    WHEN NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL)
-    THEN 1
+    WHEN NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL) THEN 1
     ELSE 0
   END
   AS isbubble
 FROM netelement AS NE
-  JOIN netelement AS NP ON NP.id = NE.parent_id
   JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
-WHERE NE.netelementtype_id >= 2 AND NE.netelementtype_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'),
+WHERE NE.base_type_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'),
   (1,'resource','nmsprime');
 
   INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
