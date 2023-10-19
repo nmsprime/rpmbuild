@@ -366,7 +366,7 @@ icingacli director kickstart run
 
 # Replace 'REPLACE' by 'INSERT INTO' according to https://stackoverflow.com/questions/1109061/insert-on-duplicate-update-in-postgresql
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
-  INSERT INTO import_source VALUES (1,'nmsprime.netelement','id','Icinga\\Module\\Director\\Import\\ImportSourceSql','unknown',NULL,NULL,NULL)
+  INSERT INTO import_source VALUES (1,'nmsprime.netelement','id','Icinga\Module\Director\Import\ImportSourceSql','unknown',NULL,NULL,NULL)
     ON CONFLICT (id) DO UPDATE SET
       id = excluded.id,
       source_name = excluded.source_name,
