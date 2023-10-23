@@ -156,6 +156,9 @@ if ! mysql -u "${credentials[0]}" -p"${credentials[1]}" -e "SELECT EXISTS(SELECT
   mysql -u "${credentials[0]}" -p"${credentials[1]}" --exec='Create user psqlconverter; GRANT select ON *.* TO psqlconverter;'
 fi
 
+read -r -a credentials <<< $(grep '^ROOT_DB_USERNAME\|^ROOT_DB_PASSWORD=' /etc/nmsprime/env/root.env | cut -d '=' -f2)
+mysql -u "${credentials[0]}" -p"${credentials[1]}" --exec='Create user psqlconverter; GRANT select ON *.* TO psqlconverter;'
+
 # Convert DBs (copy data) and Set user permissions
 for db in icinga2 icingaweb2 director; do
   cmdFile="/tmp/$db.load";
@@ -169,6 +172,8 @@ for db in icinga2 icingaweb2 director; do
     GRANT ALL PRIVILEGES ON ALL Tables in schema public TO $user;
     GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $user;"
 done
+
+mysql -u "${credentials[0]}" -p"${credentials[1]}" --exec='DROP USER psqlconverter;'
 
 if icingacli director migration pending ; then
   echo "Running Icinga Migrations"
