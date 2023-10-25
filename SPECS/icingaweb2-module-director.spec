@@ -259,7 +259,7 @@ nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2
 nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 
 hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id < 1000;"
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | sed 's/ \+| \+/ /' | while read id name; do
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" -t -A -F'|' | while IFS='|' read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     icingacli director hostgroup set "$id" --json "{\"display_name\":\"$name\"}"
@@ -447,7 +447,7 @@ nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2
 nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 
 hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id < 1000;"
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | sed 's/ \+| \+/ /' | while read id name; do
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" -t -A -F'|' | while IFS='|' read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
     icingacli director hostgroup set "$id" --json "{\"display_name\":\"$name\"}"
