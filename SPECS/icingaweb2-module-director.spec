@@ -1,6 +1,6 @@
 Name: icingaweb2-module-director
 Version: 1.11.0
-Release: 3
+Release: 1
 Summary: Configuration frontend for Icinga 2, integrated automation
 
 Group: Applications/Communications
@@ -471,7 +471,7 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
-* Wed Oct 18 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.11.0-4
+* Wed Oct 18 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.11.0-1
 - update to version 1.11.0
 - adjust icinga hostgroup query
 - reformat Netelement query
