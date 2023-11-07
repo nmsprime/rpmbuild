@@ -1,5 +1,5 @@
 Name: nmsprime-repos
-Version: 3.1.0
+Version: 3.2.0
 Release: 1
 Summary: NMS Prime and dependency RPM repos
 
@@ -61,22 +61,31 @@ EOF
 cat << EOF > grafana.repo
 [grafana]
 name=grafana
-baseurl=https://packages.grafana.com/oss/rpm
+baseurl=https://rpm.grafana.com
 repo_gpgcheck=1
 enabled=1
 gpgcheck=1
-gpgkey=https://packages.grafana.com/gpg.key
+gpgkey=https://rpm.grafana.com/gpg.key
 sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 EOF
 
 cat << EOF > remi-safe.repo
 [remi-safe]
-name=Safe Remi's RPM repository for Enterprise Linux 7 - $basearch
+name=Safe Remis RPM repository for Enterprise Linux 7 - $basearch
 mirrorlist=http://cdn.remirepo.net/enterprise/7/safe/mirror
 enabled=1
 gpgcheck=1
 gpgkey=https://rpms.remirepo.net/RPM-GPG-KEY-remi
+EOF
+
+cat << EOF > influxdb.repo
+[influxdb]
+name = InfluxData Repository - Stable
+baseurl = https://repos.influxdata.com/stable/\$basearch/main
+enabled = 1
+gpgcheck = 1
+gpgkey = https://repos.influxdata.com/influxdata-archive_compat.key
 EOF
 
 %install
@@ -86,6 +95,7 @@ install -Dm 644 mongodb-org-4.4.repo %{buildroot}%{_sysconfdir}/yum.repos.d/mong
 install -Dm 644 timescale_timescaledb.repo %{buildroot}%{_sysconfdir}/yum.repos.d/timescale_timescaledb.repo
 install -Dm 644 grafana.repo %{buildroot}%{_sysconfdir}/yum.repos.d/grafana.repo
 install -Dm 644 remi-safe.repo %{buildroot}%{_sysconfdir}/yum.repos.d/remi-safe.repo
+install -Dm 644 influxdb.repo %{buildroot}%{_sysconfdir}/yum.repos.d/influxdb.repo
 install -Dm 644 ./etc/yum.repos.d/pgdg-redhat-all.repo %{buildroot}%{_sysconfdir}/yum.repos.d/pgdg-redhat-all.repo
 install -Dm 644 ./etc/yum.repos.d/ICINGA-release.repo %{buildroot}%{_sysconfdir}/yum.repos.d/ICINGA-release.repo
 install -Dm 644 ./etc/pki/rpm-gpg/RPM-GPG-KEY-ICINGA %{buildroot}%{_sysconfdir}/pki/rpm-gpg/RPM-GPG-KEY-ICINGA
@@ -97,6 +107,7 @@ rm mongodb-org-4.4.repo
 rm timescale_timescaledb.repo
 rm grafana.repo
 rm remi-safe.repo
+rm influxdb.repo
 rm -rf ./etc
 rm -rf ./usr
 
@@ -105,6 +116,10 @@ rm -rf ./usr
 %config(noreplace) %{_sysconfdir}/*
 
 %changelog
+* Mon Apr 24 2023 Christian Schramm <christian.schramm@nmsprime.com> - 3.2.0-1
+- Add Telegraf repositories
+- Update Grafana repo urls
+
 * Wed Oct 27 2021 Christian Schramm <christian.schramm@nmsprime.com> - 3.1.0-1
 - Add PHP 8 repositories
 

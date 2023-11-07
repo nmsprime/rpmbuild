@@ -1,11 +1,12 @@
 --- a/library/Director/Objects/IcingaObjectGroups.php
 +++ b/library/Director/Objects/IcingaObjectGroups.php
-@@ -173,7 +173,7 @@
-             }
- 
-             $this->groups[$group->object_name] = $group;
--        } elseif (is_string($group)) {
-+        } elseif (is_string($group) || is_integer($group)) {
-             if (array_key_exists($group, $this->groups)) {
-                 return $this;
-             }
+@@ -183,6 +183,10 @@
+             return $this;
+        }
+
++       if (is_int($group)) {
++           $group = (string) $group;
++       }
++
+         /** @var IcingaObjectGroup $class */
+         $class = $this->getGroupClass();

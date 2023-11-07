@@ -1,5 +1,5 @@
 Name: icingaweb2-module-director
-Version: 1.10.2
+Version: 1.11.0
 Release: 1
 Summary: Configuration frontend for Icinga 2, integrated automation
 
@@ -82,6 +82,7 @@ echo "LOAD DATABASE
   FROM mysql://psqlconverter@localhost/<db>
   INTO postgresql:///<db>
   WITH data only, batch rows = 5000, prefetch rows = 5000
+  EXCLUDING TABLE NAMES MATCHING 'icinga_dbversion'
   CAST
     type tinyint to smallint
   BEFORE LOAD DO \$\$ ALTER SCHEMA public RENAME TO <db>; \$\$
@@ -99,6 +100,43 @@ for db in icinga2 icingaweb2 director; do
   user=${db}user
   sudo -Hiu postgres /usr/pgsql-13/bin/psql -c "CREATE USER $user PASSWORD '$psw'"
   echo $user
+
+  if [ "$db" = 'icinga2' ]; then
+    sed -i -e 's|//user =.*|user = "icinga2user"|' \
+      -e "s|//password =.*|password = \"$psw\"|" \
+      -e 's|//host|host|' \
+      -e 's|//database =.*|database = "icinga2"|' /etc/icinga2/features-available/ido-pgsql.conf
+
+    grep -q 'cleanup' /etc/icinga2/features-available/ido-pgsql.conf
+    if [ $? -ne 0 ]; then
+      sed -i '/^}$/d' /etc/icinga2/features-available/ido-pgsql.conf
+      cat << EOF >> /etc/icinga2/features-available/ido-pgsql.conf
+
+  cleanup = {
+    acknowledgements_age = 730d
+    commenthistory_age = 730d
+    contactnotifications_age = 730d
+    contactnotificationmethods_age = 730d
+    downtimehistory_age = 730d
+    eventhandlers_age = 730d
+    externalcommands_age = 730d
+    flappinghistory_age = 730d
+    hostchecks_age = 730d
+    logentries_age = 730d
+    notifications_age = 1d
+    processevents_age = 730d
+    statehistory_age = 730d
+    servicechecks_age = 730d
+    systemcommands_age = 730d
+  }
+}
+EOF
+    fi
+
+    chown icinga:icinga /etc/icinga2/features-available/ido-pgsql.conf
+    icinga2 feature enable ido-pgsql
+    icinga2 feature disable ido-mysql
+  fi
 done
 
 # Create DB Schema
@@ -109,9 +147,14 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql icinga2 << EOF
   ALTER TABLE icinga_servicestatus ADD created_at TIMESTAMP NULL, ADD updated_at TIMESTAMP NULL, ADD deleted_at TIMESTAMP NULL;
 EOF
 
-sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/icingaweb2/schema/pgsql.schema.sql
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director -c "CREATE EXTENSION pgcrypto;"      # Improve performance
 icingacli director migration run
+
+read -r -a credentials <<< $(grep '^ROOT_DB_USERNAME\|^ROOT_DB_PASSWORD=' /etc/nmsprime/env/root.env | cut -d '=' -f2)
+if ! mysql -u "${credentials[0]}" -p"${credentials[1]}" -e "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = 'psqlconverter')"; then
+  mysql -u "${credentials[0]}" -p"${credentials[1]}" --exec='Create user psqlconverter; GRANT select ON *.* TO psqlconverter;'
+fi
 
 read -r -a credentials <<< $(grep '^ROOT_DB_USERNAME\|^ROOT_DB_PASSWORD=' /etc/nmsprime/env/root.env | cut -d '=' -f2)
 mysql -u "${credentials[0]}" -p"${credentials[1]}" --exec='Create user psqlconverter; GRANT select ON *.* TO psqlconverter;'
@@ -130,19 +173,51 @@ for db in icinga2 icingaweb2 director; do
     GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $user;"
 done
 
+mysql -u "${credentials[0]}" -p"${credentials[1]}" --exec='DROP USER psqlconverter;'
+
+if icingacli director migration pending ; then
+  echo "Running Icinga Migrations"
+  icingacli director migration run
+else
+  echo "No Migration Necessary"
+fi
+
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
-  UPDATE import_source_setting set setting_value = 'SELECT CONCAT(NE.id, ''_'', NE.name) AS id,
-  CONCAT(NP.id, ''_'', NP.name) AS parent_id_name,
-  NP.base_type_id as parent_type,
-  NE.name, NE.parent_id AS parent,
-  NE.ip, NE.port,
-  CASE WHEN NE.community_ro <> '''' THEN NE.community_ro ELSE (SELECT ro_community FROM nmsprime.provbase WHERE deleted_at IS NULL) END AS ro_community,
-  CASE WHEN NT.base_type_id = 2 THEN 1 ELSE NT.base_type_id END AS netelementtype_id, NT.vendor,
-  CASE WHEN NE.id IN (SELECT DISTINCT netelement_id FROM nmsprime.modem WHERE modem.deleted_at IS NULL) THEN 1 ELSE 0 END AS isbubble
-FROM nmsprime.netelement AS NE
-  JOIN nmsprime.netelementtype AS NT ON NE.netelementtype_id = NT.id
-  LEFT JOIN nmsprime.netelement AS NP ON NE.parent_id = NP.id
-WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'
+  UPDATE import_source_setting set setting_value = 'SELECT
+  CONCAT(NE.id, ''_'', NE.name) AS id,
+  NE.name,
+  NE.parent_id AS parent,
+  CASE
+    WHEN (NE.community_ro <> '''') THEN NE.community_ro
+    ELSE (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)
+  END
+  AS ro_community,
+  CASE
+    WHEN position('':'' IN NE.ip) > 0 THEN SUBSTRING(NE.ip FROM 1 FOR position('':'' IN NE.ip) - 1)
+    WHEN (NE.ip <> '''') THEN NE.ip
+    ELSE ''127.0.0.1''
+  END
+  AS ip,
+  CASE
+    WHEN position('':'' IN NE.ip) > 0 THEN substring(NE.ip FROM position('':'' IN NE.ip) + 1)
+    ELSE NULL
+  END
+  AS port,
+  CASE
+    WHEN NE.base_type_id = 2 THEN 1
+    WHEN NE.base_type_id = 9 THEN 8
+    ELSE NE.base_type_id
+  END
+  AS netelementtype_id,
+  NT.vendor,
+  CASE
+    WHEN NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL) THEN 1
+    ELSE 0
+  END
+  AS isbubble
+FROM netelement AS NE
+  JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
+WHERE NE.base_type_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'
   WHERE source_id = 1 and setting_name = 'query';
 
   INSERT INTO sync_property (id, rule_id, source_id, source_expression, destination_field, priority, filter_expression, merge_policy) VALUES
@@ -167,25 +242,27 @@ WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.
     priority = excluded.priority,
     filter_expression = excluded.filter_expression,
     merge_policy = excluded.merge_policy;
+
+  UPDATE icinga_host
+  SET check_command_id = icinga_command.id, uuid = decode(replace(gen_random_uuid()::text, '-', ''), 'hex')
+  FROM (SELECT id FROM icinga_command WHERE object_name='hostalive') AS icinga_command
+  WHERE object_name = 'generic-host-director';
+
+  UPDATE icinga_host SET uuid = decode(replace(gen_random_uuid()::text, '-', ''), 'hex') where uuid IS NULL;
 EOF
 
 fi
 # end of DB switch
 
-if icingacli director migration pending ; then
-  echo "Running Icinga Migrations"
-  icingacli director migration run
-else
-  echo "No Migration Necessary"
-fi
 
 nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
 nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 
-hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | while read id name; do
+hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id < 1000;"
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" -t -A -F'|' | while IFS='|' read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
+    icingacli director hostgroup set "$id" --json "{\"display_name\":\"$name\"}"
     continue
   fi
   icingacli director hostgroup create "$id" --json "{\"display_name\":\"$name\"}"
@@ -256,7 +333,7 @@ icinga2 api setup
 
 # Icingaweb2
 sudo -u postgres createdb icingaweb2
-sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/doc/icingaweb2/schema/pgsql.schema.sql
+sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 < /usr/share/icingaweb2/schema/pgsql.schema.sql
 echo "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '$(openssl passwd -1 $icingaweb2_psw)');" | sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2
 sudo -Hiu postgres /usr/pgsql-13/bin/psql icingaweb2 -c "
   CREATE USER icingaweb2user PASSWORD '$sql_icingaweb2_psw';
@@ -296,7 +373,7 @@ icingacli director kickstart run
 
 # Replace 'REPLACE' by 'INSERT INTO' according to https://stackoverflow.com/questions/1109061/insert-on-duplicate-update-in-postgresql
 sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
-  INSERT INTO import_source VALUES (1,'nmsprime.netelement','id','Icinga\\Module\\Director\\Import\\ImportSourceSql','unknown',NULL,NULL,NULL)
+  INSERT INTO import_source VALUES (1,'nmsprime.netelement','id','Icinga\Module\Director\Import\ImportSourceSql','unknown',NULL,NULL,NULL)
     ON CONFLICT (id) DO UPDATE SET
       id = excluded.id,
       source_name = excluded.source_name,
@@ -308,22 +385,45 @@ sudo -Hiu postgres /usr/pgsql-13/bin/psql director << "EOF"
       description = excluded.description;
     ;
 
-  INSERT INTO import_source_setting VALUES (1, 'query', 'SELECT CONCAT(NE.id, ''_'', NE.name) AS id,
-  CONCAT(NP.id, ''_'', NP.name) AS parent_id_name,
-  NP.base_type_id as parent_type,
-  NE.name, NE.parent_id AS parent,
-  NE.ip, NE.port,
-  CASE WHEN NE.community_ro <> '''' THEN NE.community_ro ELSE (SELECT ro_community FROM nmsprime.provbase WHERE deleted_at IS NULL) END AS ro_community,
-  CASE WHEN NT.base_type_id = 2 THEN 1 ELSE NT.base_type_id END AS netelementtype_id, NT.vendor,
-  CASE WHEN NE.id IN (SELECT DISTINCT netelement_id FROM nmsprime.modem WHERE modem.deleted_at IS NULL) THEN 1 ELSE 0 END AS isbubble
-FROM nmsprime.netelement AS NE
-  JOIN nmsprime.netelementtype AS NT ON NE.netelementtype_id = NT.id
-  LEFT JOIN nmsprime.netelement AS NP ON NE.parent_id = NP.id
-WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.deleted_at IS NULL;'),
+  INSERT INTO import_source_setting VALUES (1, 'query', 'SELECT
+  CONCAT(NE.id, ''_'', NE.name) AS id,
+  NE.name,
+  NE.parent_id AS parent,
+  CASE
+    WHEN (NE.community_ro <> '''') THEN NE.community_ro
+    ELSE (SELECT ro_community FROM provbase WHERE deleted_at IS NULL)
+  END
+  AS ro_community,
+  CASE
+    WHEN position('':'' IN NE.ip) > 0 THEN SUBSTRING(NE.ip FROM 1 FOR position('':'' IN NE.ip) - 1)
+    WHEN (NE.ip <> '''') THEN NE.ip
+    ELSE ''127.0.0.1''
+  END
+  AS ip,
+  CASE
+    WHEN position('':'' IN NE.ip) > 0 THEN substring(NE.ip FROM position('':'' IN NE.ip) + 1)
+    ELSE NULL
+  END
+  AS port,
+  CASE
+    WHEN NE.base_type_id = 2 THEN 1
+    WHEN NE.base_type_id = 9 THEN 8
+    ELSE NE.base_type_id
+  END
+  AS netelementtype_id,
+  NT.vendor,
+  CASE
+    WHEN NE.id IN (SELECT DISTINCT netelement_id FROM modem WHERE  modem.deleted_at IS NULL) THEN 1
+    ELSE 0
+  END
+  AS isbubble
+FROM netelement AS NE
+  JOIN netelementtype AS NT ON NE.netelementtype_id = NT.id
+WHERE NE.base_type_id NOT IN (11, 12, 13, 14) AND NE.deleted_at IS NULL;'),
   (1,'resource','nmsprime');
 
   INSERT INTO icinga_host (object_name,object_type,check_command_id,max_check_attempts,check_interval,retry_interval) SELECT 'generic-host-director','template',id,3,'60','30' FROM icinga_command WHERE object_name='hostalive';
-  INSERT INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,'unknown',NULL,NULL,NULL);
+  INSERT INTO sync_rule VALUES (1,'syncHosts','host','override','y',NULL,NULL,'unknown',NULL,NULL,NULL);
   INSERT INTO sync_property VALUES
     (1,1,1,'generic-host-director','import',1,NULL,'override'),
     (2,1,1,'${ip}','address',2,NULL,'override'),
@@ -339,15 +439,18 @@ WHERE NT.base_type_id between 2 and 10 and NT.base_type_id not in (8, 9) AND NE.
     (12,1,1,'${parent_type}','vars.parent_type',12,NULL,'override');
   INSERT INTO director_job VALUES (1,'nmsprime.netelement','Icinga\Module\Director\Job\ImportJob','n',300,NULL,NULL,NULL,NULL,NULL), (2,'syncHosts','Icinga\Module\Director\Job\SyncJob','n',300,NULL,NULL,NULL,NULL,NULL), (3,'deploy','Icinga\Module\Director\Job\ConfigJob','n',300,NULL,NULL,NULL,NULL,NULL);
   INSERT INTO director_job_setting VALUES (1,'run_import','y'),(1,'source_id','1'),(2,'apply_changes','y'),(2,'rule_id','1'),(3,'deploy_when_changed','y'),(3,'force_generate','n'),(3,'grace_period','600');
+
+  UPDATE icinga_host SET uuid = decode(replace(gen_random_uuid()::text, '-', ''), 'hex') where uuid IS NULL;
 EOF
 
 nmsprime_sec=$(awk '/\[nmsprime\]/{flag=1;next}/\[/{flag=0}flag' /etc/icingaweb2/resources.ini)
 nmsprime_name=$(grep 'dbname' <<< "$nmsprime_sec" | cut -d'=' -f2 | tr -d "\"'" | xargs)
 
-hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id <= 10;"
-sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" | tail -n +3 | head -n-2 | while read id name; do
+hostgroupquery="SELECT id, name FROM nmsprime.netelementtype WHERE (parent_id = 0 OR parent_id IS NULL) and id not in (8) AND id < 1000;"
+sudo -Hiu postgres /usr/pgsql-13/bin/psql -d $nmsprime_name -c "$hostgroupquery" -t -A -F'|' | while IFS='|' read id name; do
   icingacli director hostgroup exists "$id" > /dev/null
   if [ $? -eq 0 ]; then
+    icingacli director hostgroup set "$id" --json "{\"display_name\":\"$name\"}"
     continue
   fi
   icingacli director hostgroup create "$id" --json "{\"display_name\":\"$name\"}"
@@ -368,6 +471,16 @@ done
 %attr(4755, -, -) %{_bindir}/sas2ircu
 
 %changelog
+* Wed Oct 18 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.11.0-1
+- update to version 1.11.0
+- adjust icinga hostgroup query
+- reformat Netelement query
+
+* Tue Sep 12 2023 Ole Ernst <ole.ernst@nmsprime.com> - 1.10.2-2
+- disable mysql and enable pgsql IDO feature during migration
+- adjust check_command_id of generic-host-director to use the hostalive one (since the IDs change during migration)
+- add database cleanup intervals
+
 * Tue Mar 21 2023 Christian Schramm <christian.schramm@nmsprime.com> - 1.10.2-1
 - update to version 1.10.2
 
