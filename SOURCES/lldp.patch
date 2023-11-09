@@ -1,0 +1,149 @@
+--- a/env/lib/python3.9/site-packages/napalm/ios/utils/textfsm_templates/show_lldp_neighbors_detail.tpl
++++ b/env/lib/python3.9/site-packages/napalm/ios/utils/textfsm_templates/show_lldp_neighbors_detail.tpl
+@@ -8,7 +8,7 @@
+ Value REMOTE_SYSTEM_ENABLE_CAPAB (.*)
+ 
+ Start
+-  ^Local Intf\s*?[:-]\s+${LOCAL_INTERFACE}
++  ^Local Int(?:er)?f(?:ace)?\s*?[:-]\s+${LOCAL_INTERFACE}
+   ^Chassis id\s*?[:-]\s+${REMOTE_CHASSIS_ID}
+   ^Port id\s*?[:-]\s+${REMOTE_PORT}
+   ^Port Description\s*?[:-]\s+${REMOTE_PORT_DESCRIPTION}
+--- a/env/lib/python3.9/site-packages/napalm/base/constants.py
++++ b/env/lib/python3.9/site-packages/napalm/base/constants.py
+@@ -70,6 +70,7 @@
+ }
+ LLDP_CAPAB_TRANFORM_TABLE = {
+     "o": "other",
++    "n/a": "other",
+     "p": "repeater",
+     "b": "bridge",
+     "w": "wlan-access-point",
+--- a/env/lib/python3.9/site-packages/napalm/ios/ios.py
++++ b/env/lib/python3.9/site-packages/napalm/ios/ios.py
+@@ -958,6 +958,13 @@
+             if " uptime is " in line:
+                 hostname, uptime_str = line.split(" uptime is ")
+                 uptime = self.parse_uptime(uptime_str)
++
++                if hostname == 'System':
++                    show_run_in_hostname = self._send_command("show run | include ^hostname")
++                    for line in show_run_in_hostname.splitlines():
++                        if line.startswith('hostname '):
++                            _, hostname = line.split("hostname ")
++
+                 hostname = hostname.strip()
+ 
+             if "Processor board ID" in line:
+@@ -1048,7 +1055,7 @@
+         command = "show interfaces"
+         output = self._send_command(command)
+ 
+-        interface = description = mac_address = speed = speedformat = ""
++        interface = description = mac_address = speed = speedformat = utilization = input_errors = output_errors = ""
+         is_enabled = is_up = None
+ 
+         interface_dict = {}
+@@ -1098,6 +1105,21 @@
+                     speed = speed * 1000
+                 speed = int(round(speed))
+ 
++            utilization_regex = r"^\s+reliability\s+(\d+)\/(\d+),\s+txload\s+(\d+)\/(\d+), rxload (\d+)\/(\d+)"
++            if re.search(utilization_regex, line):
++                utilization_match = re.search(utilization_regex, line)
++                utilization = round((int(utilization_match.groups()[2]) + int(utilization_match.groups()[4])) / (int(utilization_match.groups()[3]) + int(utilization_match.groups()[5])) * 10) / 10
++
++            input_errors_regex = r"^\s+(\d+)\s+input\s+errors"
++            if re.search(input_errors_regex, line):
++                input_errors_match = re.search(input_errors_regex, line)
++                input_errors = int(input_errors_match.groups()[0])
++
++            output_errors_regex = r"^\s+(\d+)\s+input\s+errors"
++            if re.search(output_errors_regex, line):
++                output_errors_match = re.search(output_errors_regex, line)
++                output_errors = int(output_errors_match.groups()[0])
++
+                 if interface == "":
+                     raise ValueError(
+                         "Interface attributes were \
+@@ -1114,9 +1136,12 @@
+                     "last_flapped": last_flapped,
+                     "mtu": mtu,
+                     "speed": speed,
++                    "utilization": utilization,
++                    "input_errors": input_errors,
++                    "output_errors": output_errors,
+                 }
+ 
+-                interface = description = mac_address = speed = speedformat = ""
++                interface = description = mac_address = speed = speedformat = utilization = input_errors = output_errors = ""
+                 is_enabled = is_up = None
+ 
+         return interface_dict
+@@ -2119,6 +2144,12 @@
+                     match = re.search(r"(\d+) output errors", line)
+                     counters[interface]["tx_errors"] = int(match.group(1))
+                     counters[interface]["tx_discards"] = -1
++                elif "txload" in line:
++                    # 'reliability 255/255, txload 1/255, rxload 1/255'
++                    match = re.search(r"txload (\d+)\/(\d+), rxload (\d+)\/(\d+)", line)
++                    if match:
++                        counters[interface]["tx_utilization"] = int(match.group(1)) / int(match.group(2))
++                        counters[interface]["rx_utilization"] = int(match.group(3)) / int(match.group(4))
+             for line in sh_int_sum_cmd_out.splitlines():
+                 if interface in line:
+                     # Line is tabular output with columns
+--- a/env/lib/python3.9/site-packages/napalm/junos/junos.py
++++ b/env/lib/python3.9/site-packages/napalm/junos/junos.py
+@@ -375,6 +375,21 @@ class JunOSDriver(NetworkDriver):
+             interface_counters[interface] = {
+                 k: v if v is not None else -1 for k, v in counters
+             }
++
++            interface_counters[interface]['tx_utilization'] = 0
++            interface_counters[interface]['rx_utilization'] = 0
++            if (interface.startswith('ge-')):
++                interface_counters[interface]['tx_utilization'] = interface_counters[interface]['tx_octets_per_second'] * 8 / 1000000000
++                interface_counters[interface]['rx_utilization'] = interface_counters[interface]['rx_octets_per_second'] * 8 / 1000000000
++            if (interface.startswith('xe-')):
++                interface_counters[interface]['tx_utilization'] = interface_counters[interface]['tx_octets_per_second'] * 8 / 10000000000
++                interface_counters[interface]['rx_utilization'] = interface_counters[interface]['rx_octets_per_second'] * 8 / 10000000000
++            if (interface.startswith('et-')):
++                interface_counters[interface]['tx_utilization'] = interface_counters[interface]['tx_octets_per_second'] * 8 / 40000000000
++                interface_counters[interface]['rx_utilization'] = interface_counters[interface]['rx_octets_per_second'] * 8 / 40000000000
++            del interface_counters[interface]['tx_octets_per_second']
++            del interface_counters[interface]['rx_octets_per_second']
++
+         return interface_counters
+ 
+     def get_environment(self):
+--- a/env/lib/python3.9/site-packages/napalm/junos/utils/junos_views.yml
++++ b/env/lib/python3.9/site-packages/napalm/junos/utils/junos_views.yml
+@@ -141,6 +141,8 @@ junos_iface_counter_view:
+   fields_ts:
+     rx_octets: { input-bytes: int }
+     tx_octets: { output-bytes: int }
++    rx_octets_per_second: { input-bps: int }
++    tx_octets_per_second: { output-bps: int }
+ 
+   fields_rxerrs:
+     rx_errors: { input-errors: int }
++++ a/env/lib/python3.9/site-packages/jnpr/junos/factcache.py
++++ b/env/lib/python3.9/site-packages/jnpr/junos/factcache.py
+@@ -1,13 +1,14 @@
+-import collections
+ import warnings
+ from pprint import pformat
+ 
++from six.moves.collections_abc import MutableMapping
++
+ import jnpr.junos.facts
+ from jnpr.junos.facts import __doc__ as facts_doc
+ import jnpr.junos.exception
+ 
+ 
+-class _FactCache(collections.MutableMapping):
++class _FactCache(MutableMapping):
+     """
+     A dictionary-like object which performs on-demand fact gathering.
+ 
