@@ -33,6 +33,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://localhost:8080',
     'https://127.0.0.1:8080',
 ]
+
+# Prohibit creation of duplicate IP addresses
+ENFORCE_GLOBAL_UNIQUE = True
 EOF
 
 sed -e 's/User=netbox/User=nobody/' -e 's/Group=netbox/Group=nobody/' -i contrib/*.service
