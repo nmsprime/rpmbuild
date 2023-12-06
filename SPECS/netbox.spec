@@ -35,7 +35,12 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Prohibit creation of duplicate IP addresses
+# Default: False
 ENFORCE_GLOBAL_UNIQUE = True
+
+# Allow to retrieve all entries at once via API (using ?limit=0)
+# Default: 1000
+MAX_PAGE_SIZE = None
 EOF
 
 sed -e 's/User=netbox/User=nobody/' -e 's/Group=netbox/Group=nobody/' -i contrib/*.service
