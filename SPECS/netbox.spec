@@ -23,15 +23,20 @@ cp %{name}/%{name}/configuration_example.py %{name}/%{name}/configuration.py
 cp contrib/gunicorn.py .
 
 sed -e "s/^ALLOWED_HOSTS = \[\]$/ALLOWED_HOSTS = \['*'\]/" \
+    -e "s/^BASE_PATH = ''$,/BASE_PATH = 'netbox/',/" \
     -e "s/'USER': '',/'USER': 'netbox',/" \
     -e 's/^CORS_ORIGIN_ALLOW_ALL = False$/CORS_ORIGIN_ALLOW_ALL = True/' \
     -e 's/^REMOTE_AUTH_ENABLED = False$/REMOTE_AUTH_ENABLED = True/' \
     -i %{name}/%{name}/configuration.py
 
 cat << EOF >> %{name}/%{name}/configuration.py
+# To prevent
+# Forbidden (403) – CSRF verification failed. Request aborted
+# add here where your NetBox installation is reachable at
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost:8080',
     'https://127.0.0.1:8080',
+    # https://example.com:8080
 ]
 
 # Prohibit creation of duplicate IP addresses
