@@ -1,6 +1,6 @@
 Name: modempoller-nmsprime
 Version: 0.0.3
-Release: 2
+Release: 3
 Summary: A highly efficient modem snmp poller
 
 Group: Applications/Communications
@@ -27,6 +27,9 @@ install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}
 %{_bindir}/%{name}
 
 %changelog
+* Tue Dec 19 2023 Christian Schramm <christian.schramm@nmsprime.com> - 0.0.3-3
+- Use host function to retreive ipv4
+
 * Mon Mar 21 2022 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 0.0.3-2
 - Require Postgres DB now
 
