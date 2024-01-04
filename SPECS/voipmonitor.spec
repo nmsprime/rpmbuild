@@ -1,18 +1,19 @@
 Name: voipmonitor
-Version: 16.0.2
+Version: 2024.01
 Release: 1
 Summary: A live network packet sniffer which analyze SIP and RTP protocol
 
 Group: Applications/Communications
 License: GPLv2
 URL: https://www.voipmonitor.org
-Source: https://github.com/%{name}/sniffer/archive/b47e0d2.tar.gz
+Source: https://github.com/%{name}/sniffer/archive/a6df0dd.tar.gz
 
 BuildRequires: curl-devel, json-c-devel, fftw-devel, gnutls-devel, libogg-devel
 BuildRequires: libpcap-devel, libgcrypt-devel, libpng-devel, libssh-devel
 BuildRequires: libxml2-devel, libvorbis-devel, lzo-devel, mariadb-devel
 BuildRequires: rrdtool-devel, snappy-devel, unixODBC-devel, zlib-devel
-Requires: curl, json-c, mariadb-server, rrdtool, snappy, unixODBC
+BuildRequires: libicu-devel, libzstd-devel, lz4-devel
+Requires: curl, json-c, mariadb-server, rrdtool, snappy, unixODBC, libzstd
 
 %description
 VoIPmonitor is open source live network packet sniffer which analyze SIP
@@ -27,7 +28,8 @@ BYE or OK was not seen. To accuratly transform latency to loss packets,
 voipmonitor simulates fixed and adaptive jitterbuffer.
 
 %prep
-%autosetup -n sniffer-b47e0d2cd9af01ec029601a4b6dd13d76edd7b91
+%autosetup -n sniffer-a6df0dd4ae19cde999dfcfbe5ec18fdce12f1826
+sed -i 's/-ge 34/-ge 27/' configure.in
 
 %build
 autoreconf -vfi
@@ -47,5 +49,7 @@ install -d %{buildroot}%{_localstatedir}/spool/%{name}
 %dir %{_localstatedir}/spool/%{name}
 
 %changelog
+* Thu Jan 04 2024 Ole Ernst <ole.ernst@roetzer-engineering.com> - 2024.01-1
+- Update 2024.01
 * Mon Jun 13 2016 Ole Ernst <ole.ernst@roetzer-engineering.com> - 16.0.2-1
 - Initial RPM release
