@@ -74,7 +74,7 @@ $telegrafConfig = @"
     dest="message"
 
 [[outputs.syslog]]
-  address = "udp://demo.nmsprime.com:514"
+  address = "udp://$syslogServerHostname`:514"
   sdids = [
     "Data_LogonType",
     "Data_TargetDomainName",
@@ -114,19 +114,27 @@ if (-not (Test-Path $telegrafInstallPath)) {
     New-Item -ItemType Directory -Path $telegrafInstallPath | Out-Null
 }
 
+$service = Get-WMIObject -class Win32_Service -filter "name='$serviceName'"
+
 # Copy extracted files to the installation directory
+if ($service) {
+  Stop-Service -Name $serviceName
+}
+
 Copy-Item -Path "$telegrafExtractPath\telegraf-1.29.2\*" -Destination $telegrafInstallPath -Recurse
 
 # Create the Telegraf Config
 $telegrafConfig | Set-Content -Path $telegrafConfigFile -Force
 
-# Install Telegraf as a service
-& "$telegrafInstallPath\telegraf.exe" --service install --config "$telegrafConfigFile" --service-name $serviceName
 
-# Set user and password to server to be available at boot and lock screens
-if ($serviceUser -And $serviceUserPassword) {
-  $service = Get-WMIObject -class Win32_Service -filter "name='Telegraf'"
-  $service.change($null, $null, $null, $null, $null, $false, ".\$serviceUser", "$serviceUserPassword")
+if (-not ($service)) {
+  # Install Telegraf as a service
+  & "$telegrafInstallPath\telegraf.exe" --service install --config "$telegrafConfigFile" --service-name $serviceName --service-auto-restart
+
+  # Set user and password to server to be available at boot and lock screens
+  if ($serviceUser -And $serviceUserPassword) {
+    $service.change($null, $null, $null, $null, $null, $false, ".\$serviceUser", "$serviceUserPassword")
+  }
 }
 
 # Start the Telegraf service
