@@ -5,5 +5,5 @@
     notifempty
     compress
     delaycompress
-    create 0640 netbox netbox
+    create 0640 nobody nobody
 }

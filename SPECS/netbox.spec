@@ -8,6 +8,8 @@ Group: Applications/Communications
 License: Apache2
 URL: https://netbox.dev
 Source: https://github.com/%{name}-community/%{name}/archive/refs/tags/v%{version}.tar.gz
+Source2: netbox.logrotate
+Source3: netbox.logfile
 
 Requires: gcc libxml2-devel libxslt-devel libffi-devel libpq5-devel openssl-devel redhat-rpm-config rh-redis6-redis rh-python38 rh-python38-python-pip rh-python38-python-devel
 
@@ -23,13 +25,43 @@ cp %{name}/%{name}/configuration_example.py %{name}/%{name}/configuration.py
 cp contrib/gunicorn.py .
 
 sed -e "s/^ALLOWED_HOSTS = \[\]$/ALLOWED_HOSTS = \['*'\]/" \
-    -e "s/^BASE_PATH = ''$,/BASE_PATH = 'netbox/',/" \
+    -e "s/^BASE_PATH = ''$/BASE_PATH = 'netbox\/'/" \
     -e "s/'USER': '',/'USER': 'netbox',/" \
     -e 's/^CORS_ORIGIN_ALLOW_ALL = False$/CORS_ORIGIN_ALLOW_ALL = True/' \
     -e 's/^REMOTE_AUTH_ENABLED = False$/REMOTE_AUTH_ENABLED = True/' \
+    -e 's#^LOGGING = {}$#LOGGING = {\
+     "version": 1,\
+     "disable_existing_loggers": False,\
+     "formatters": {\
+         "normal": {\
+             "format": "%\(asctime\)s %\(name\)s %\(levelname\)s: %\(message\)s"\
+         },\
+     },\
+     "handlers": {\
+         "file": {\
+             "level": "DEBUG",\
+             "class": "logging.handlers.WatchedFileHandler",\
+             "filename": "/var/log/netbox/netbox.log",\
+             "formatter": "normal",\
+         },\
+     },\
+     "loggers": {\
+         "django": {\
+             "handlers": ["file"],\
+             "level": "WARNING",\
+         },\
+         "netbox": {\
+             "handlers": ["file"],\
+             "level": "WARNING",\
+         },\
+     },\
+}#' \
     -i %{name}/%{name}/configuration.py
 
 cat << EOF >> %{name}/%{name}/configuration.py
+
+# NMS PRIME settings:
+
 # To prevent
 # Forbidden (403) – CSRF verification failed. Request aborted
 # add here where your NetBox installation is reachable at
@@ -52,16 +84,25 @@ sed -e 's/User=netbox/User=nobody/' -e 's/Group=netbox/Group=nobody/' -i contrib
 
 %install
 install -d %{buildroot}/opt
+install -d %{buildroot}/etc
+install -d %{buildroot}/etc/logrotate.d
+install -d %{buildroot}/var
+install -d %{buildroot}/var/log
+install -d %{buildroot}/var/log/netbox
 cd ..
 cp -r %{name}-%{version} %{buildroot}/opt/%{name}
 install -d %{buildroot}%{_unitdir}
 cp %{name}-%{version}/contrib/*.service %{buildroot}%{_unitdir}
 cp %{name}-%{version}/contrib/*.timer %{buildroot}%{_unitdir}
+%{__install} -D -m 0644 %{SOURCE2} %{buildroot}/%{_sysconfdir}/logrotate.d/netbox
+%{__install} -D -m 0640 %{SOURCE3} %{buildroot}/var/log/netbox/netbox.log
 
 %files
 %{_unitdir}
 /opt/%{name}
 %config(noreplace) /opt/%{name}/%{name}/%{name}/configuration.py
+%config(noreplace) %{_sysconfdir}/logrotate.d/netbox
+%config(noreplace) /var/log/netbox/netbox.log
 
 %post
 if [ $1 -eq 1 ]; then
@@ -80,6 +121,9 @@ if [ $1 -eq 1 ]; then
 
     source /opt/rh/rh-python38/enable
     /opt/netbox/upgrade.sh
+
+    chmod -R o-rwx /var/log/netbox
+    chown -R nobody:nobody /var/log/netbox
 
     systemctl daemon-reload
     systemctl enable netbox-housekeeping.timer
