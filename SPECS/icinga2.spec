@@ -26,17 +26,17 @@ Requires: icinga2-bin = 2.14.2-1.el7
 BuildRequires: libedit-devel
 BuildRequires: ncurses-devel
 
-BuildRequires: devtoolset-11-binutils
-BuildRequires: devtoolset-11-gcc-c++
-BuildRequires: devtoolset-11-libstdc++-devel
+BuildRequires: binutils
+BuildRequires: gcc-c++
+BuildRequires: libstdc++-devel
 
 BuildRequires: openssl-devel
 BuildRequires: bison
-BuildRequires: cmake3
+BuildRequires: cmake
 BuildRequires: flex >= 2.5.35
 BuildRequires: make
 
-BuildRequires: boost169-devel >= 1.66
+BuildRequires: boost-devel >= 1.75
 
 BuildRequires: systemd-devel
 Requires: systemd
@@ -84,7 +84,7 @@ IDOUtils schema >= 1.12
 Summary: IDO PostgreSQL database backend for Icinga 2
 Group: System/Monitoring
 
-BuildRequires: postgresql-devel
+BuildRequires: postgresql13-devel
 
 Requires: icinga2-bin = 2.14.2-1.el7
 
@@ -126,6 +126,9 @@ Provides Nano syntax highlighting for icinga2.
 
 %prep
 %autosetup
+sed -i '1 i\set(Boost_INCLUDE_DIR /usr/include)' CMakeLists.txt
+sed -i '1 i\set(PostgreSQL_INCLUDE_DIR /usr/pgsql-13/include)' third-party/cmake/FindPostgreSQL.cmake
+sed -i '1 i\set(PostgreSQL_LIBRARY /usr/pgsql-13/lib)' third-party/cmake/FindPostgreSQL.cmake
 
 %build
 export CCACHE_BASEDIR="${CCACHE_BASEDIR:-$(pwd)}"
@@ -159,15 +162,15 @@ CMAKE_OPTS="$CMAKE_OPTS -DICINGA2_WITH_PGSQL=ON"
 CMAKE_OPTS="$CMAKE_OPTS
 -DBoost_NO_BOOST_CMAKE=TRUE \
 -DBoost_NO_SYSTEM_PATHS=TRUE \
--DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
--DBOOST_INCLUDEDIR=/usr/include/boost169 \
--DBoost_ADDITIONAL_VERSIONS='1.69;1.69.0'"
+-DBOOST_LIBRARYDIR=/usr/lib64 \
+-DBOOST_INCLUDEDIR=/usr/include/boost \
+-DBoost_ADDITIONAL_VERSIONS='1.75;1.75.0'"
 
 CMAKE_OPTS="$CMAKE_OPTS -DUSE_SYSTEMD=ON"
 
-scl enable devtoolset-11 -- cmake3 $CMAKE_OPTS -DCMAKE_C_FLAGS:STRING="-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic " -DCMAKE_CXX_FLAGS:STRING="-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic " .
+cmake3 $CMAKE_OPTS -DCMAKE_C_FLAGS:STRING="-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic " -DCMAKE_CXX_FLAGS:STRING="-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic " .
 
-scl enable devtoolset-11 -- make %_smp_mflags
+make %_smp_mflags
 
 cd tools/selinux
 for selinuxvariant in mls targeted
@@ -180,7 +183,7 @@ cd -
 
 %install
 
-scl enable devtoolset-11 -- make install \
+make install \
 DESTDIR="%_topdir/BUILDROOT/icinga2-2.14.2-1.el7.x86_64"
 
 rm -f %_topdir/BUILDROOT/icinga2-2.14.2-1.el7.x86_64//etc/icinga2/features-enabled/*.conf
