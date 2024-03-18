@@ -1,5 +1,5 @@
 Name: dhcpd-pools
-Version: 3.1
+Version: 3.2
 Release: 1
 Summary: ISC dhcpd leases usage analysis
 
@@ -8,7 +8,7 @@ License: BSD
 URL: https://sourceforge.net/projects/dhcpd-pools
 Source: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.xz
 
-BuildRequires: uthash-devel
+BuildRequires: gcc uthash-devel
 
 %description
 This is dhcpd-pools - ISC dhcpd lease status utility.
@@ -30,6 +30,9 @@ make %{?_smp_mflags}
 %{_datarootdir}/*
 
 %changelog
+* Fri Mar 25 2022 Ole Ernst <ole.ernst@nmsprime.com> - 3.2-1
+- upgpkg
+
 * Fri Mar 25 2022 Ole Ernst <ole.ernst@nmsprime.com> - 3.1-1
 - upgpkg
 

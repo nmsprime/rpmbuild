@@ -1,17 +1,14 @@
 Name: voipmonitor
-Version: 16.0.2
+Version: 30.8.3
 Release: 1
 Summary: A live network packet sniffer which analyze SIP and RTP protocol
 
 Group: Applications/Communications
 License: GPLv2
-URL: https://www.voipmonitor.org
-Source: https://github.com/%{name}/sniffer/archive/b47e0d2.tar.gz
+URL: https://www.%{name}.org
+Source0: https://sourceforge.net/projects/%{name}/files/30.8/%{name}-amd64-%{version}-static.tar.gz
+Source1: https://raw.githubusercontent.com/%{name}/sniffer/c899707257d547351b068bcdede55af343af9c0e/config/systemd/%{name}.service
 
-BuildRequires: curl-devel, json-c-devel, fftw-devel, gnutls-devel, libogg-devel
-BuildRequires: libpcap-devel, libgcrypt-devel, libpng-devel, libssh-devel
-BuildRequires: libxml2-devel, libvorbis-devel, lzo-devel, mariadb-devel
-BuildRequires: rrdtool-devel, snappy-devel, unixODBC-devel, zlib-devel
 Requires: curl, json-c, mariadb-server, rrdtool, snappy, unixODBC
 
 %description
@@ -27,17 +24,12 @@ BYE or OK was not seen. To accuratly transform latency to loss packets,
 voipmonitor simulates fixed and adaptive jitterbuffer.
 
 %prep
-%autosetup -n sniffer-b47e0d2cd9af01ec029601a4b6dd13d76edd7b91
-
-%build
-autoreconf -vfi
-%configure
-make %{?_smp_mflags}
+%autosetup -n %{name}-amd64-%{version}-static
 
 %install
-install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}
-install -Dm644 config/%{name}.conf %{buildroot}%{_sysconfdir}/%{name}.conf
-install -Dm644 config/systemd/%{name}.service %{buildroot}%{_unitdir}/%{name}.service
+install -Dm755 usr/local/sbin/%{name} %{buildroot}%{_bindir}/%{name}
+install -Dm644 etc/%{name}.conf %{buildroot}%{_sysconfdir}/%{name}.conf
+install -Dm644 %{_sourcedir}/%{name}.service %{buildroot}%{_unitdir}/%{name}.service
 install -d %{buildroot}%{_localstatedir}/spool/%{name}
 
 %files
@@ -47,5 +39,8 @@ install -d %{buildroot}%{_localstatedir}/spool/%{name}
 %dir %{_localstatedir}/spool/%{name}
 
 %changelog
+* Mon Nov 14 2022 Ole Ernst <ole.ernst@roetzer-engineering.com> - 30.8.3-1
+- upgpkg
+
 * Mon Jun 13 2016 Ole Ernst <ole.ernst@roetzer-engineering.com> - 16.0.2-1
 - Initial RPM release

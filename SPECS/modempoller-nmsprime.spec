@@ -8,8 +8,8 @@ License: GPLv3
 URL: https://github.com/nmsprime/async-snmp-poller
 Source: https://raw.githubusercontent.com/nmsprime/async-snmp-poller/master/src/%{name}.c
 
-Requires: net-snmp-libs libpq5
-BuildRequires: gcc net-snmp-devel libpq5-devel
+Requires: net-snmp-libs libpq
+BuildRequires: gcc net-snmp-devel libpq-devel
 
 %description
 This asynchronous snmp poller solves the issue with Cacti when monitoring several
