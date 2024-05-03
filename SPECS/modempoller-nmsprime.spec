@@ -8,8 +8,8 @@ License: GPLv3
 URL: https://github.com/nmsprime/async-snmp-poller
 Source: https://raw.githubusercontent.com/nmsprime/async-snmp-poller/master/src/%{name}.c
 
-Requires: net-snmp-libs libpq
-BuildRequires: gcc net-snmp-devel libpq-devel
+Requires: net-snmp-libs postgresql16-libs
+BuildRequires: gcc net-snmp-devel postgresql16-devel
 
 %description
 This asynchronous snmp poller solves the issue with Cacti when monitoring several
@@ -18,7 +18,7 @@ its monitoring data by using hundreds of concurrent php workers which handle eac
 small batch of devices sequentially. This blocks the CPU and scales pretty poorly.
 
 %build
-gcc -s -L $(pg_config --libdir) -l netsnmp -l pq -o %{name} %{_sourcedir}/%{name}.c
+gcc -s -I $(/usr/pgsql-16/bin/pg_config --includedir) -L $(/usr/pgsql-16/bin/pg_config --libdir) -l netsnmp -l pq -o %{name} %{_sourcedir}/%{name}.c
 
 %install
 install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}
