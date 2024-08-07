@@ -1,6 +1,6 @@
 Name: nmsprime-repos
 Version: 4.0.0
-Release: 2
+Release: 3
 Summary: NMS Prime and dependency RPM repos
 
 Group: Applications/Communications
@@ -14,14 +14,14 @@ Source2: https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg
 This package contains the nmsprime and dependency RPM repos.
 
 %prep
-rpm2cpio %{_sourcedir}/remi-release-9.rpm | zstd -d | cpio -ivdm
-rpm2cpio %{_sourcedir}/pgdg-redhat-repo-latest.noarch.rpm | zstd -d | cpio -ivdm
+rpm2cpio %{_sourcedir}/remi-release-9.rpm | cpio -ivdm
+rpm2cpio %{_sourcedir}/pgdg-redhat-repo-latest.noarch.rpm | cpio -ivdm
 
 %build
 cat << EOF > nmsprime-os.repo
 [nmsprime-os]
 name=NMS Prime OS
-baseurl=https://repo.nmsprime.com/rpm/nmsprimeNG/os
+baseurl=https://repo9.nmsprime.com/rpm/nmsprime-rocky/os
 enabled=1
 gpgcheck=0
 sslverify=1
@@ -30,7 +30,7 @@ EOF
 cat << EOF > nmsprime-prime.repo
 [nmsprime-prime]
 name=NMS Prime
-baseurl=https://repo.nmsprime.com/rpm/nmsprimeNG/prime
+baseurl=https://repo9.nmsprime.com/rpm/nmsprime-rocky/prime
 enabled=0
 gpgcheck=0
 sslverify=1
@@ -96,13 +96,16 @@ mv etc/yum.repos.d/* %{buildroot}%{_sysconfdir}/yum.repos.d/
 %config(noreplace) %{_sysconfdir}/*
 
 %changelog
+* Thu Mar 07 2024 Ole Ernst <ole.ernst@nmsprime.com> - 4.0.0-3
+- adjust baseurl for rocky9 release
+
 * Thu Mar 07 2024 Ole Ernst <ole.ernst@nmsprime.com> - 4.0.0-2
 - Reintroduce remi repo for php-8.2 support
 - Update PostgreSQL repository
 - Update MongoDB repository
 - Remove alma-devel repo, since we can get freeradius-postgresql from CRB
 
-* Fri Nov 11 2022 Ole Ernst <ole.ernst@nmsprime.com> - 4.0.0-1
+* Fri Nov 10 2023 Ole Ernst <ole.ernst@nmsprime.com> - 4.0.0-1
 - Add alma-devel repo used for freeradius-postgresql
 - Add influxdb repo used for telegraf
 - Remove unneeded remi repo, since native php is used from now on
