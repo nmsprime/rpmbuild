@@ -15,6 +15,7 @@ License: GPLv3
 Requires: python3
 Requires: telegraf
 Requires: tar
+Requires: nmsprime-telegraf-data-getters
 
 %description
 Makes your machine download telegraf config from nmsprime and sending collected data to a Kafka server
