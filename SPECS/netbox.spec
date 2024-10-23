@@ -1,6 +1,9 @@
-%define __python /opt/rh/rh-python38/root/usr/bin/python
+%define __python3 python3.12
+%define __python3_binary /usr/bin/%{__python3}
+%define __psql_binary /usr/pgsql-16/bin/psql
+
 Name: netbox
-Version: 3.5.4
+Version: 4.1.4
 Release: 1
 Summary: The premier source of truth powering network automation.
 
@@ -11,7 +14,7 @@ Source: https://github.com/%{name}-community/%{name}/archive/refs/tags/v%{versio
 Source2: netbox.logrotate
 Source3: netbox.logfile
 
-Requires: gcc libxml2-devel libxslt-devel libffi-devel libpq5-devel openssl-devel redhat-rpm-config rh-redis6-redis rh-python38 rh-python38-python-pip rh-python38-python-devel
+Requires: gcc libxml2-devel libxslt-devel libffi-devel libpq5-devel openssl-devel postgresql16-server redhat-rpm-config redis %{__python3} %{__python3}-pip %{__python3}-devel
 
 %description
 NetBox is the source of truth for everything on your network, from physical
@@ -97,6 +100,10 @@ cp %{name}-%{version}/contrib/*.timer %{buildroot}%{_unitdir}
 %{__install} -D -m 0644 %{SOURCE2} %{buildroot}/%{_sysconfdir}/logrotate.d/netbox
 %{__install} -D -m 0640 %{SOURCE3} %{buildroot}/var/log/netbox/netbox.log
 
+# temp: Fix ambigous shebang causing rpmbuild to die
+# (see https://github.com/netbox-community/netbox/issues/17838)
+sed -e 's/^#!\/usr\/bin\/env python$/#\/usr\/bin\/env python3/' -i %{buildroot}/opt/%{name}/%{name}/manage.py
+
 %files
 %{_unitdir}
 /opt/%{name}
@@ -112,15 +119,14 @@ if [ $1 -eq 1 ]; then
     export pgsql_pw=$(pwgen 16 1)
     export secret=$(pwgen 64 1)
 
-    sudo -Hiu postgres /usr/pgsql-13/bin/psql -c 'CREATE DATABASE netbox;' -c "CREATE USER netbox WITH PASSWORD '$pgsql_pw'; ALTER DATABASE netbox OWNER TO netbox;"
-    sudo -Hiu postgres /usr/pgsql-13/bin/psql netbox -c "GRANT CREATE ON SCHEMA public TO netbox;"
+    sudo -Hiu postgres %{__psql_binary} -c 'CREATE DATABASE netbox;' -c "CREATE USER netbox WITH PASSWORD '$pgsql_pw'; ALTER DATABASE netbox OWNER TO netbox;"
+    sudo -Hiu postgres %{__psql_binary} netbox -c "GRANT CREATE ON SCHEMA public TO netbox;"
 
     sed -e "s/'PASSWORD': '',           # PostgreSQL password/'PASSWORD': '$pgsql_pw',           # PostgreSQL password/" \
         -e "s/^SECRET_KEY = ''$/SECRET_KEY = '$secret'/" \
         -i /opt/netbox/netbox/netbox/configuration.py
 
-    source /opt/rh/rh-python38/enable
-    /opt/netbox/upgrade.sh
+    PYTHON=%{__python3_binary} /opt/netbox/upgrade.sh
 
     chmod -R o-rwx /var/log/netbox
     chown -R nobody:nobody /var/log/netbox
@@ -131,5 +137,8 @@ if [ $1 -eq 1 ]; then
 fi
 
 %changelog
+* Wed Oct 23 2024 Patrick Reichel <patrick.reichel@nmsprime.com> - 4.1.4-1
+- Switch to version 4
+
 * Wed Sep 20 2023 Ole Ernst <ole.ernst@nmsprime.com> - 3.5.4-1
 - Initial RPM release
