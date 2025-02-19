@@ -84,7 +84,7 @@ IDOUtils schema >= 1.12
 Summary: IDO PostgreSQL database backend for Icinga 2
 Group: System/Monitoring
 
-BuildRequires: postgresql13-devel
+BuildRequires: postgresql16-devel
 
 Requires: icinga2-bin = 2.14.2-1.el7
 
