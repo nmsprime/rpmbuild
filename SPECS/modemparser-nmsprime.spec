@@ -1,5 +1,5 @@
 Name: modemparser-nmsprime
-Version: 0.0.4
+Version: 0.0.5
 Release: 1
 Summary: A highly efficient modem parser written in Rust
 
@@ -30,6 +30,9 @@ install -Dm755 target/release/modemparser %{buildroot}%{_bindir}/%{name}
 %{_bindir}/%{name}
 
 %changelog
+* Mon Feb 17 2025 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.5-1
+- Bugfix / Make script more robust
+
 * Thu Jun 27 2024 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.4-1
 - Rocky9 release
 
