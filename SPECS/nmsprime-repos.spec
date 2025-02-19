@@ -96,7 +96,7 @@ mv etc/yum.repos.d/* %{buildroot}%{_sysconfdir}/yum.repos.d/
 %config(noreplace) %{_sysconfdir}/*
 
 %changelog
-* Thu Mar 07 2024 Ole Ernst <ole.ernst@nmsprime.com> - 4.0.0-3
+* Wed Aug 07 2024 Ole Ernst <ole.ernst@nmsprime.com> - 4.0.0-3
 - adjust baseurl for rocky9 release
 
 * Thu Mar 07 2024 Ole Ernst <ole.ernst@nmsprime.com> - 4.0.0-2
