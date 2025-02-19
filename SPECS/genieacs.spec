@@ -1,5 +1,5 @@
 Name: genieacs
-Version: 1.2.12
+Version: 1.2.13
 Release: 1
 Summary: A fast and lightweight TR-069 Auto Configuration Server (ACS)
 
@@ -88,6 +88,9 @@ install -d %{buildroot}%{_datadir}/%{name}/ext
 %attr(755, nobody, nobody) %{_localstatedir}/log/%{name}
 
 %changelog
+* Wed Feb 19 2025 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.13-1
+- Update to 1.2.13-1
+
 * Fri May 03 2024 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.12-1
 - Update to 1.2.12-1
 
