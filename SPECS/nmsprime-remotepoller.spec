@@ -20,19 +20,6 @@ Requires: nmsprime-telegraf-data-getters
 %description
 Makes your machine download telegraf config from nmsprime and sending collected data to a Kafka server
 
-# this is needed to prevent python compilation error on CentOS (#2235)
-# otherwise it tries to execute %{buildroot}/opt/nmsprime/remotepoller/pollercontroller.py (using python 2.7)
-# thanks to: https://github.com/scylladb/scylladb/issues/2235
-%global __os_install_post    \
-    /usr/lib/rpm/redhat/brp-compress \
-    %{!?__debug_package:\
-    /usr/lib/rpm/redhat/brp-strip %{__strip} \
-    /usr/lib/rpm/redhat/brp-strip-comment-note %{__strip} %{__objdump} \
-    } \
-    /usr/lib/rpm/redhat/brp-strip-static-archive %{__strip} \
-    %{!?__jar_repack:/usr/lib/rpm/redhat/brp-java-repack-jars} \
-%{nil}
-
 %prep
 # Nothing to prep
 
