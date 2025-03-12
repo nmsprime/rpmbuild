@@ -4,7 +4,7 @@
 %define __psql_binary /usr/pgsql-%{__psql_version}/bin/psql
 
 Name: netbox
-Version: 4.1.5
+Version: 4.1.11
 Release: 1
 Summary: The premier source of truth powering network automation.
 
@@ -134,8 +134,11 @@ if [ $1 -eq 1 ]; then
 fi
 
 %changelog
+* Wed Mar 12 2025 Patrick Reichel <patrick.reichel@nmsprime.com> - 4.1.11-1
+- Switch to version 4.1.11
+
 * Wed Oct 23 2024 Patrick Reichel <patrick.reichel@nmsprime.com> - 4.1.5-1
-- Switch to version 4
+- Switch to version 4.1.5
 
 * Wed Sep 20 2023 Ole Ernst <ole.ernst@nmsprime.com> - 3.5.4-1
 - Initial RPM release
