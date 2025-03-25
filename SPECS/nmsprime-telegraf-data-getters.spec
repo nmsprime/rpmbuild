@@ -5,12 +5,12 @@ Summary: Data getters for various NMS Prime sensors
 
 Group: Applications/Communications
 License: GPLv3
-Requires: python3
+Requires: python3 python3-ntplib
 
 Source0: nmsprime-telegraf-data-getters
 
 %description
-Add scripts to collect data about e.g. SNTP and mail servers and provide to telegraf
+Add scripts to collect data about e.g. (S)NTP and mail servers and provide to telegraf
 
 %install
 install -d -m 0755 %{SOURCE0} %{buildroot}/opt/nmsprime/telegraf-data-getters

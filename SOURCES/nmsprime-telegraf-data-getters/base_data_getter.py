@@ -18,6 +18,13 @@ class BaseDataGetter:
     status = None
     execution_time = None
 
+    # Overwrite for your derived data getter
+    # Your dict must contain at least these two keys
+    status_mapping = {
+        "Success": 0,
+        "Unknown error": 1,
+    }
+
     ############################################################################
     def __init__(self):
         self._read_args()
