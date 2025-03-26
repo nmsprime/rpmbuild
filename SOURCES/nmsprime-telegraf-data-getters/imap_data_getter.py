@@ -26,48 +26,20 @@ class ImapDataGetter(base_data_getter.BaseDataGetter):
         "Unknown error": 1,
         "OSError": 2,
         "socket.gaierror": 3,
+        "gaierror": 3,
         "TimeoutError": 4,
         "IMAP4.error": 5,
         "IMAP4.abort": 6,
         "IMAP4.readonly": 7,
+        "PythonVersionException": 8,
     }
 
     ############################################################################
-    def __init__(self):
-        super().__init__()
-
-    ############################################################################
-    def timeout(max_time):
-        """
-        Timeout decorator, parameter in seconds.
-        Unfortunately the timeout param has been added to IPAM4 call not before version 3.9…
-        The thread would run forever but will be killed by the timeout defined on telegraf.
-        Remove that workaround once we get a python version >=3.9
-        """
-
-        def timeout_decorator(item):
-            """Wrap the original function."""
-
-            if sys.version_info[0] > 2 and sys.version_info[1] > 8:
-                # nothing to do
-                return
-
-            @functools.wraps(item)
-            def func_wrapper(*args, **kwargs):
-                """Closure for function."""
-                pool = multiprocessing.pool.ThreadPool(processes=1)
-                async_result = pool.apply_async(item, args, kwargs)
-                # raises a TimeoutError if execution exceeds max_timeout
-                return async_result.get(max_time)
-
-            return func_wrapper
-
-        return timeout_decorator
-
-    ############################################################################
-    # decorator param can't access dynamically created values in global or class variables
-    @timeout(10.5 if len(sys.argv) == 2 else int(sys.argv[2]) * 1.05)
     def _execute_simple(self):
+
+        # needs at least Python 3.9 to have the timeout argument in IMAP
+        if sys.version_info[0] < 3 or sys.version_info[1] < 9:
+            raise base_data_getter.PythonVersionException()
 
         if self.params["proto"] == "IMAP":
             from imaplib import IMAP4 as TEST_IMAP_CLASS
@@ -77,9 +49,8 @@ class ImapDataGetter(base_data_getter.BaseDataGetter):
         params = {
             "host": self.params["host"],
             "port": self.params["port"],
+            "timeout": self.params["timeout"],
         }
-        if sys.version_info[0] > 2 and sys.version_info[1] > 8:
-            params["timeout"] = self.params["timeout"]
 
         with TEST_IMAP_CLASS(**params) as imap:
             imap.noop()
