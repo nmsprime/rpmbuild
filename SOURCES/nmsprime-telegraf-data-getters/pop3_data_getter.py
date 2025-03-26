@@ -33,12 +33,13 @@ class Pop3DataGetter(base_data_getter.BaseDataGetter):
         elif self.params["proto"] == "POP3S":
             from poplib import POP3_SSL as TEST_POP3_CLASS
 
-        with TEST_POP3_CLASS(
-            host=self.params["host"],
-            port=self.params["port"],
-            timeout=self.params["timeout"],
-        ) as pop3:
-            pop3.noop()
+        params = {
+            "host": self.params["host"],
+            "port": self.params["port"],
+            "timeout": self.params["timeout"],
+        }
+
+        TEST_POP3_CLASS(**params).getwelcome()
 
     ############################################################################
     def _generate_output(self):

@@ -42,11 +42,13 @@ class SmtpDataGetter(base_data_getter.BaseDataGetter):
         elif self.params["proto"] == "SMTPS":
             from smtplib import SMTP_SSL as TEST_SMTP_CLASS
 
-        with TEST_SMTP_CLASS(
-            host=self.params["host"],
-            port=self.params["port"],
-            timeout=self.params["timeout"],
-        ) as smtp:
+        params = {
+            "host": self.params["host"],
+            "port": self.params["port"],
+            "timeout": self.params["timeout"],
+        }
+
+        with TEST_SMTP_CLASS(**params) as smtp:
             smtp.noop()
 
     ############################################################################
