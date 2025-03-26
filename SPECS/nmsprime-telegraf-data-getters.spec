@@ -1,5 +1,5 @@
 Name: nmsprime-telegraf-data-getters
-Version: 1.0
+Version: 1.1
 Release: 1
 Summary: Data getters for various NMS Prime sensors
 
@@ -20,5 +20,8 @@ install -D -m 0644 %{SOURCE0}/*.py %{buildroot}/opt/nmsprime/telegraf-data-gette
 /opt/nmsprime/telegraf-data-getters
 
 %changelog
+* Tue Mar 25 2025 Patrick Reichel <patrick.reichel@nmsprime.com> - 1.1-1
+- Use python ntplib instead of the sntp binary (not available in Rocky 9)
+
 * Wed Aug 21 2024 Patrick Reichel <patrick.reichel@nmsprime.com> - 1.0-1
 - Initial RPM release
