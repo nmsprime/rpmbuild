@@ -1,6 +1,6 @@
 Name: genieacs
 Version: 1.2.13
-Release: 1
+Release: 2
 Summary: A fast and lightweight TR-069 Auto Configuration Server (ACS)
 
 Group: Applications/Communications
@@ -55,6 +55,7 @@ cat << EOF >> %{name}.log
     compress
     delaycompress
     dateext
+	missingok
 }
 EOF
 
@@ -88,6 +89,9 @@ install -d %{buildroot}%{_datadir}/%{name}/ext
 %attr(755, nobody, nobody) %{_localstatedir}/log/%{name}
 
 %changelog
+* Mon Apr 07 2025 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 1.2.13-2
+- Fix logrote startup error on missing genieacs log file
+
 * Wed Feb 19 2025 Ole Ernst <ole.ernst@nmsprime.com> - 1.2.13-1
 - Update to 1.2.13-1
 
