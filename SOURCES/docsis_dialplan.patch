@@ -159,13 +159,12 @@ diff --git a/src/docsis_common.h b/src/docsis_common.h
 index a3aeefe..b94460e 100644
 --- a/src/docsis_common.h
 +++ b/src/docsis_common.h
-@@ -32,11 +32,11 @@
+@@ -25,10 +25,10 @@
+ #define _DOCSIS_COMMON_H
  
- 
- #ifndef NUM_IDENTIFIERS
--#define NUM_IDENTIFIERS 1427
+ /* needed in docsis_symtable.h */
+-#define NUM_IDENTIFIERS 1539
 +#define NUM_IDENTIFIERS 9000
- #endif /*  NUM_IDENTIFIERS, needed in docsis_symtable.h  */
  
  #define MAXINT 2000000000
 -#define TLV_VSIZE 1024
@@ -173,6 +172,7 @@ index a3aeefe..b94460e 100644
  #define TRUE 1
  #define FALSE 0
  
+
 diff --git a/src/docsis_decode.c b/src/docsis_decode.c
 index b0a5b77..f4e6ce5 100644
 --- a/src/docsis_decode.c

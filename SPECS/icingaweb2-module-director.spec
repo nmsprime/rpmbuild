@@ -18,8 +18,8 @@ Source8: https://gitlab.com/argaar/nagios-plugins/raw/master/check%20symmetra%20
 Source9: https://raw.githubusercontent.com/melmorabity/nagios-plugin-systemd-service/master/check_systemd_service.sh
 
 Requires: bc dhcpd-pools icinga2 icinga2-ido-pgsql icingacli icingaweb2 icingaweb2-module-incubator nagios-plugins-all
-Requires: nmsprime-hfcreq nmsprime-provmon perl-Nagios-Plugin perl-Net-SNMP
-Requires: perl-Readonly perl-Switch php80-php-ldap php80-php-intl rh-php73-php-process pgloader
+Requires: nmsprime-hfcreq nmsprime-provmon nagios-plugins-perl perl-Net-SNMP
+Requires: perl-Readonly perl-Switch php-ldap php-intl php-process pgloader
 
 %description
 Icinga Director has been designed to make Icinga 2 configuration handling easy.
@@ -322,8 +322,6 @@ sed -i "s/vars.pgsql_password = \"<pgsql_icinga2_psw>\"/vars.pgsql_password = \"
 
 systemctl enable icinga2
 systemctl start icinga2
-systemctl enable php80-php-fpm
-systemctl start php80-php-fpm
 systemctl enable icinga-director
 systemctl start icinga-director
 icinga2 feature enable ido-pgsql
@@ -363,7 +361,6 @@ sed -i -e "s/^endpoint = \"<hostname>\"$/endpoint = \"$(hostname)\"/" \
   -e "s/^password = \"<director_api_psw>\"$/password = \"$director_api_psw\"/" /etc/icingaweb2/modules/director/kickstart.ini
 sed -i "s/^password = \"<cmdtransport_api_psw>\"$/password = \"$cmdtransport_api_psw\"/" /etc/icingaweb2/modules/monitoring/commandtransports.ini
 systemctl restart httpd
-systemctl restart php80-php-fpm
 icingacli module enable director
 icingacli director migration run
 echo "127.0.0.1 $(hostname)" >> /etc/hosts

@@ -1,0 +1,27 @@
+diff --git a/src/docsis_common.h b/src/docsis_common.h
+index 424418e..3e626da 100644
+--- a/src/docsis_common.h
++++ b/src/docsis_common.h
+@@ -25,7 +25,7 @@
+ #define _DOCSIS_COMMON_H
+ 
+ /* needed in docsis_symtable.h */
+-#define NUM_IDENTIFIERS 1536
++#define NUM_IDENTIFIERS 1539
+ 
+ #define MAXINT 2000000000
+ #define TLV_VSIZE 1024
+diff --git a/src/docsis_symtable.h b/src/docsis_symtable.h
+index bb2b070..b8a1d76 100644
+--- a/src/docsis_symtable.h
++++ b/src/docsis_symtable.h
+@@ -106,6 +106,9 @@ symbol_type symtable[NUM_IDENTIFIERS] =  {
+ { 271,    "EnergyManagementCapabilities",      44,     144,    (encode_hexstr),         (decode_hexstr),         4,           4             }, /* TLV 5.44 MULPIv3.0-I24 Annex C.1.3.1.43 */
+ { 272,    "CDOCSISCapabilityEncoding",         45,     144,    (encode_hexstr),         (decode_hexstr),         0,           0             }, /* TLV 5.45 MULPIv3.0-I24 Annex C.1.3.1.44 */
+ { 273,    "CMSTATUSACK",                       46,     144,    (encode_uchar),          (decode_uchar),          0,           1             }, /* TLV 5.46 MULPIv3.0-I24 Annex C.1.3.1.45 */
++{ 1536,   "DownstreamLowerBandEdgeSupport",    54,     144,    (encode_hexstr),         (decode_hexstr),         0,           1             }, /* TLV 5.54 MULPIv3.1-I25 Annex C.1.3.1.53 */
++{ 1537,   "DownstreamUpperBandEdgeSupport",    55,     144,    (encode_hexstr),         (decode_hexstr),         0,           1             }, /* TLV 5.55 MULPIv3.1-I25 Annex C.1.3.1.54 */
++{ 1538,   "DiplexerUpperBandEdgeSupport",      56,     144,    (encode_uchar),          (decode_uchar),          0,           4             }, /* TLV 5.56 MULPIv3.1-I25 Annex C.1.3.1.55 */
+ { 4,      "CmMic",                             6,      0,      (encode_nothing),        (decode_md5),            0,           0             }, /* TLV 6 MULPIv3.0-I24 Annex C.1.1.5 */
+ { 5,      "CmtsMic",                           7,      0,      (encode_nothing),        (decode_md5),            0,           0             }, /* TLV 7 MULPIv3.0-I24 Annex C.1.1.6 */
+ { 14,     "SwUpgradeFilename",                 9,      0,      (encode_string),         (decode_string),         0,           0             }, /* TLV 9 MULPIv3.0-I24 Annex C.1.2.3 */

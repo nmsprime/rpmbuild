@@ -1,5 +1,5 @@
 Name: modemparser-nmsprime
-Version: 0.0.2
+Version: 0.0.5
 Release: 1
 Summary: A highly efficient modem parser written in Rust
 
@@ -14,9 +14,12 @@ A highly efficient modem parser for DOCSIS / SNMP and CWMP / TR069 devices writt
 
 %prep
 git clone git@github.com:nmsprime/modemparser.git
+cd modemparser
+sed -i "s/vVERSION/v$(git describe --long --tags --abbrev=7 | sed 's/\([^-]*-g\)/r\1/;s/-/./g')/" src/main.rs
 
 %build
 cd modemparser
+git switch --detach "%{version}"
 cargo rustc --release
 
 %install
@@ -27,6 +30,12 @@ install -Dm755 target/release/modemparser %{buildroot}%{_bindir}/%{name}
 %{_bindir}/%{name}
 
 %changelog
+* Mon Feb 17 2025 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.5-1
+- Bugfix / Make script more robust
+
+* Thu Jun 27 2024 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.4-1
+- Rocky9 release
+
 * Wed Mar 23 2022 Ole Ernst <ole.ernst@nmsprime.com> - 0.0.2-1
 - Use PostgreSQL DB now
 
