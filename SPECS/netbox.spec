@@ -5,7 +5,7 @@
 
 Name: netbox
 Version: 4.1.11
-Release: 1
+Release: 2
 Summary: The premier source of truth powering network automation.
 
 Group: Applications/Communications
@@ -61,6 +61,9 @@ sed -e "s/^ALLOWED_HOSTS = \[\]$/ALLOWED_HOSTS = \['*'\]/" \
      },\
 }#' \
     -i %{name}/%{name}/configuration.py
+
+# needed to accept the autologin cookie in the NMSPrime <iframe>
+sed -e "s/# header.map = .*/header_map = 'dangerous'/" -i gunicorn.py
 
 cat << EOF >> %{name}/%{name}/configuration.py
 
@@ -134,6 +137,9 @@ if [ $1 -eq 1 ]; then
 fi
 
 %changelog
+* Wed Mar 12 2025 Patrick Reichel <patrick.reichel@nmsprime.com> - 4.1.11-2
+- Bugfix; allow autologin cookie in iframe again
+
 * Wed Mar 12 2025 Patrick Reichel <patrick.reichel@nmsprime.com> - 4.1.11-1
 - Switch to version 4.1.11
 
