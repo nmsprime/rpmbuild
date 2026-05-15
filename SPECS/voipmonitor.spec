@@ -1,19 +1,15 @@
 Name: voipmonitor
-Version: 2024.01
+Version: 2024.08.1
 Release: 1
 Summary: A live network packet sniffer which analyze SIP and RTP protocol
 
 Group: Applications/Communications
 License: GPLv2
-URL: https://www.voipmonitor.org
-Source: https://github.com/%{name}/sniffer/archive/a6df0dd.tar.gz
+URL: https://www.%{name}.org
+Source0: https://sourceforge.net/projects/%{name}/files/2024.08/%{name}-amd64-%{version}-static.tar.gz
+Source1: https://raw.githubusercontent.com/%{name}/sniffer/c899707257d547351b068bcdede55af343af9c0e/config/systemd/%{name}.service
 
-BuildRequires: curl-devel, json-c-devel, fftw-devel, gnutls-devel, libogg-devel
-BuildRequires: libpcap-devel, libgcrypt-devel, libpng-devel, libssh-devel
-BuildRequires: libxml2-devel, libvorbis-devel, lzo-devel, mariadb-devel
-BuildRequires: rrdtool-devel, snappy-devel, unixODBC-devel, zlib-devel
-BuildRequires: libicu-devel, libzstd-devel, lz4-devel
-Requires: curl, json-c, mariadb-server, rrdtool, snappy, unixODBC, libzstd
+Requires: curl, json-c, mariadb-server, rrdtool, snappy, unixODBC
 
 %description
 VoIPmonitor is open source live network packet sniffer which analyze SIP
@@ -28,18 +24,12 @@ BYE or OK was not seen. To accuratly transform latency to loss packets,
 voipmonitor simulates fixed and adaptive jitterbuffer.
 
 %prep
-%autosetup -n sniffer-a6df0dd4ae19cde999dfcfbe5ec18fdce12f1826
-sed -i 's/-ge 34/-ge 27/' configure.in
-
-%build
-autoreconf -vfi
-%configure
-make %{?_smp_mflags}
+%autosetup -n %{name}-amd64-%{version}-static
 
 %install
-install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}
-install -Dm644 config/%{name}.conf %{buildroot}%{_sysconfdir}/%{name}.conf
-install -Dm644 config/systemd/%{name}.service %{buildroot}%{_unitdir}/%{name}.service
+install -Dm755 usr/local/sbin/%{name} %{buildroot}%{_bindir}/%{name}
+install -Dm644 etc/%{name}.conf %{buildroot}%{_sysconfdir}/%{name}.conf
+install -Dm644 %{_sourcedir}/%{name}.service %{buildroot}%{_unitdir}/%{name}.service
 install -d %{buildroot}%{_localstatedir}/spool/%{name}
 
 %files
@@ -49,7 +39,11 @@ install -d %{buildroot}%{_localstatedir}/spool/%{name}
 %dir %{_localstatedir}/spool/%{name}
 
 %changelog
+* Wed Aug 07 2024 Ole Ernst <ole.ernst@nmsprime.com> - 2024.08.1-1
+- Update 2024.08.01
+
 * Thu Jan 04 2024 Ole Ernst <ole.ernst@roetzer-engineering.com> - 2024.01-1
 - Update 2024.01
+
 * Mon Jun 13 2016 Ole Ernst <ole.ernst@roetzer-engineering.com> - 16.0.2-1
 - Initial RPM release

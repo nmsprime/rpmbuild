@@ -1,5 +1,5 @@
 Name: prometheus
-Version: 2.36.2
+Version: 2.54.1
 Release: 1
 Summary: A monitoring system and time series database
 
@@ -7,7 +7,6 @@ Group: Applications/Communications
 License: ASL 2.0
 URL: https://prometheus.io
 Source: https://github.com/%{name}/%{name}/releases/download/v%{version}/%{name}-%{version}.linux-amd64.tar.gz
-Requires: promscale promscale-extension-postgresql-13
 
 %description
 Prometheus, a Cloud Native Computing Foundation project, is a systems and
@@ -43,29 +42,10 @@ scrape_configs:
     tls_config:
         insecure_skip_verify: true
 
-remote_write:
-  - url: "http://localhost:9201/write"
-remote_read:
-  - url: "http://localhost:9201/read"
-    read_recent: true
-
-rule_files:
-  - 'prometheus_rules.yml'
-
 alerting:
   alertmanagers:
   - static_configs:
     - targets: ['localhost:9093']
-EOF
-
-cat << EOF > %{name}_rules.yml
-groups:
-- name: CM
-  rules:
-  - alert: HighUsSNR
-    expr: snmp_us_pwr > 370
-    labels:
-      severity: critical
 EOF
 
 cat << EOF > %{name}.service
@@ -90,7 +70,6 @@ EOF
 
 %install
 install -Dm644 %{name}.yml %{buildroot}%{_sysconfdir}/%{name}/%{name}.yml
-install -Dm644 %{name}_rules.yml %{buildroot}%{_sysconfdir}/%{name}/%{name}_rules.yml
 install -Dm644 %{name}.service %{buildroot}%{_unitdir}/%{name}.service
 cd %{name}-%{version}.linux-amd64
 install -Dm755 %{name} %{buildroot}%{_bindir}/%{name}
@@ -106,10 +85,13 @@ useradd -c "Prometheus dedicated user" -u 210 -g %{name} -s /bin/false -r %{name
 %{_bindir}/%{name}
 %{_bindir}/promtool
 %config(noreplace) %{_sysconfdir}/%{name}/%{name}.yml
-%config(noreplace)%{_sysconfdir}/%{name}/%{name}_rules.yml
 %{_unitdir}/%{name}.service
 %attr(0755,prometheus,prometheus) %dir %{_sharedstatedir}/%{name}
 
 %changelog
+* Tue Oct 15 2024 Ole Ernst <ole.ernst@nmsprime.com> - 2.54.1-1
+- Update to v2.54.1
+- Remove remote_{read,write} since promscale is deprecated
+
 * Fri Jun 24 2022 Ole Ernst <ole.ernst@nmsprime.com> - 2.36.2-1
 - Initial RPM release

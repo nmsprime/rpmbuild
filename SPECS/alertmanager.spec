@@ -1,5 +1,5 @@
 Name: alertmanager
-Version: 0.24.0
+Version: 0.28.0
 Release: 1
 Summary: Prometheus Alertmanager
 
@@ -79,5 +79,11 @@ install -dm755 %{buildroot}%{_sharedstatedir}/%{name}
 %attr(0755,prometheus,prometheus) %dir %{_sharedstatedir}/%{name}
 
 %changelog
+* Wed Feb 19 2025 Ole Ernst <ole.ernst@nmsprime.com> - 0.28.0-1
+- Update to version v0.28.0
+
+* Tue Oct 15 2024 Ole Ernst <ole.ernst@nmsprime.com> - 0.27.0-1
+- Update to version v0.27.0
+
 * Fri Jun 24 2022 Ole Ernst <ole.ernst@nmsprime.com> - 0.24.0-1
 - Initial RPM release
