@@ -1,6 +1,6 @@
 Name: nmsprime-repos
 Version: 4.0.0
-Release: 3
+Release: 4
 Summary: NMS Prime and dependency RPM repos
 
 Group: Applications/Communications
@@ -96,6 +96,9 @@ mv etc/yum.repos.d/* %{buildroot}%{_sysconfdir}/yum.repos.d/
 %config(noreplace) %{_sysconfdir}/*
 
 %changelog
+* Fri May 15 2026 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 4.0.0-4
+- Update postgres repo
+
 * Wed Aug 07 2024 Ole Ernst <ole.ernst@nmsprime.com> - 4.0.0-3
 - adjust baseurl for rocky9 release
 
