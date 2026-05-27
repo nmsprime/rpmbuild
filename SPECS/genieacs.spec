@@ -1,14 +1,18 @@
 Name: genieacs
 Version: 1.2.13
-Release: 2
+Release: 3
 Summary: A fast and lightweight TR-069 Auto Configuration Server (ACS)
 
 Group: Applications/Communications
 License: AGPLv3
 URL: https://%{name}.com/
 
-BuildRequires: npm
-Requires: mongodb-org-server, nodejs
+# Node.js 24 Active LTS (DNF module nodejs:24). EL9 modular RPMs need epoch in Requires:
+#   nodejs >= 1:24, nodejs < 1:25  (plain "nodejs < 25" does not resolve in dnf builddep).
+# Staging fallback if 24 fails: nodejs:22 with nodejs >= 1:22, nodejs < 1:23.
+BuildRequires: nodejs >= 1:24, nodejs < 1:25, npm
+Requires: mongodb-org-server
+Requires: nodejs >= 1:24, nodejs < 1:25
 
 %description
 GenieACS is an open source TR-069 remote management solution with advanced
@@ -89,6 +93,9 @@ install -d %{buildroot}%{_datadir}/%{name}/ext
 %attr(755, nobody, nobody) %{_localstatedir}/log/%{name}
 
 %changelog
+* Wed May 27 2026 NMS Prime <patrick.reichel@nmsprime.com> - 1.2.13-3
+- Require Node.js 24.x Active LTS (>= 1:24, < 1:25) for runtime and build
+
 * Mon Apr 07 2025 Nino Ryschawy <nino.ryschawy@nmsprime.com> - 1.2.13-2
 - Fix logrote startup error on missing genieacs log file
 
