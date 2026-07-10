@@ -7,6 +7,7 @@ Group: Applications/Communications
 License: MIT
 URL: https://github.com/genieacs/genieacs-sim
 
+# DEPRECATED – will not build on modern NodeJS versions
 BuildRequires: gcc-c++, libxml2, npm
 Requires: nodejs
 
