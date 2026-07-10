@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name: php-sourceguardian-loader
-Version: 15.0.0
+Version: 17.0.0
 Release: 1
 Summary: The SourceGuardian Loader
 
@@ -21,20 +21,23 @@ SourceGuardian loader to be installed on the server and made available to PHP.
 mv "SourceGuardian Loader License.pdf" LICENSE.pdf
 cat << EOF > 01-sourceguardian_loader.ini
 ; Enable sourceguardian_loader extension module
-zend_extension = ixed.8.3.lin
+zend_extension = ixed.8.4.lin
 EOF
 
 %install
 install -Dm644 01-sourceguardian_loader.ini %{buildroot}%{_sysconfdir}/php.d/01-sourceguardian_loader.ini
-install -Dm755 ixed.8.3.lin %{buildroot}/usr/lib64/php/modules/ixed.8.3.lin
+install -Dm755 ixed.8.4.lin %{buildroot}/usr/lib64/php/modules/ixed.8.4.lin
 
 %files
 %doc README
 %license LICENSE.pdf
 %config(noreplace) %{_sysconfdir}/php.d/01-sourceguardian_loader.ini
-/usr/lib64/php/modules/ixed.8.3.lin
+/usr/lib64/php/modules/ixed.8.4.lin
 
 %changelog
+* Tue Jun 02 2026 Ole Ernst <ole.ernst@nmsprime.com> - 17.0.0-1
+- Upgrade php-sourceguardian-loader for PHP8.4
+
 * Wed May 08 2024 Ole Ernst <ole.ernst@nmsprime.com> - 15.0.0-1
 - Upgrade php-sourceguardian-loader for PHP8.3
 

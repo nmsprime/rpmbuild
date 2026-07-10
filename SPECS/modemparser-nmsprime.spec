@@ -7,7 +7,8 @@ Group: Applications/Communications
 License: GPLv3
 URL: https://github.com/nmsprime/modemparser
 
-BuildRequires: cargo git openssl-devel rust
+#BuildRequires: cargo git openssl-devel rust
+BuildRequires: git openssl-devel
 
 %description
 A highly efficient modem parser for DOCSIS / SNMP and CWMP / TR069 devices written in Rust.
