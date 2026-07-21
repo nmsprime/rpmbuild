@@ -1,0 +1,8 @@
+/var/log/nmsprime/remotepoller.log {
+    weekly
+    missingok
+    rotate 9
+    compress
+    delaycompress
+    create 640 root root
+}
